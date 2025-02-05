@@ -1,72 +1,52 @@
-use std::os::raw;
 
+use crate::interpreter::token::RawToken;
+use super::{instruction::Instruction, token};
 
+const MAX_STACK_SIZE: usize = 2048;
+
+enum Section {
+    DATA,
+    TEXT,
+}
 pub struct VirtualMachine {
     file_path: String,
-    memory: Vec<u16>,
-}
+    ac: i8, // Accumulator
+    pc: u32, // Program Counter
+    
+    sp: u32, // Stack Pointer
+    stack: [i8; MAX_STACK_SIZE ], // Stack
 
-enum Opcode {
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-}
-
-#[derive(Debug, Clone)] 
-struct RawToken {
-    token: String,
-    pub line: u32,
-    pub col: u32,
-}
-impl RawToken {
-    pub fn new(token: String, line: u32, col: u32) -> RawToken {
-        RawToken {
-            token: token,
-            line: line,
-            col: col,
-        }
-    }
-    pub fn push(&mut self, c: char) {
-        self.token.push(c);
-    }
-
-    pub fn clear(&mut self) {
-        self.token.clear();
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.token.is_empty()
-    }
-
-    pub fn len(&self) -> usize {
-        self.token.len()
-    }
+    memory: Vec<Instruction>, // Memory
 }
 
 impl VirtualMachine {
     pub fn new(file_path: &str) -> VirtualMachine {
         VirtualMachine {
             file_path: file_path.to_string(),
+            ac: 0,
+            pc: 0,
+            sp: u32::MAX,
             memory: Vec::new(),
+            stack: [0; MAX_STACK_SIZE],
         }
     }
 
     pub fn run(&mut self) {
-        self.tokenize();
+        let tokens = self.tokenize();
+        self.memory = self.parse(tokens);
     }
 
-    fn tokenize(&mut self) {
+    fn tokenize(&mut self) -> Vec<RawToken> {
         let mut raw_content = match std::fs::read_to_string(&self.file_path) {
             Ok(content) => content,
             Err(_) => {panic!("Error reading file");},
         };
         println!("Raw content as vec: {:?}", Vec::from(raw_content.clone()));
         let mut tokens = Vec::new();
-        let mut raw_token = RawToken{token: String::new(), line: 0, col: 0};
+        let mut raw_token = RawToken::new();
         let mut is_literal_str = false;
-        let mut line_count = 0;
-        let mut col_count = 0;
+        let mut line_count = 1;
+        let mut col_count = 1;
         for (i, c) in raw_content.chars().enumerate() {
             if c == '\r' {
                 continue;
@@ -104,11 +84,18 @@ impl VirtualMachine {
                         col_count += 1;
                         
                     },
+                    ',' => { // e.g.: 4,4, 2, 3 -> '4', ',', '4', ',', '2', ',', '3'
+                        if !raw_token.is_empty() {
+                            tokens.push( raw_token.clone() );
+                            raw_token.clear();
+                        }
+                        raw_token.push(',');
+                        col_count += 1;
+
+                    },
                     ' ' => {
                         if !raw_token.is_empty() {
-                            tokens.push(
-                                raw_token.clone(),
-                            );
+                            tokens.push( raw_token.clone() );
                             raw_token.clear();
                         }
                         col_count += 1;
@@ -121,20 +108,26 @@ impl VirtualMachine {
                             raw_token.clear();
                         }
                         line_count += 1;
-                        col_count = 0;
+                        col_count = 1;
                     },
                     _ => {
                         if !raw_token.is_empty() {
                             raw_token.line = line_count;
-                            raw_token.col = col_count - raw_token.len() as u32; // -1 porque o col_count é incrementado antes de ser usado, então o valor atual é o próximo
+                            raw_token.col = col_count;
                         }
                         raw_token.push(c);
                         col_count += 1;
                     },
                 }
-                println!("{} -->Line: {}, Col: {} === literal_str={}",c ,line_count, col_count, is_literal_str);
+                //println!("{} --> Line: {} | Col: {} | is_literal_str={}",c ,line_count, col_count, is_literal_str);
             }
-
+            let last_raw_token_char = raw_token.get_token().chars().last();
+            if last_raw_token_char == Some(',') {
+                tokens.push(
+                    raw_token.clone(),
+                );
+                raw_token.clear();
+            }
             if i == raw_content.len()-1 {
                 if !raw_token.is_empty() {
                     tokens.push(
@@ -150,7 +143,52 @@ impl VirtualMachine {
             println!("{} --> {:?}",i , tokens[i]);
         }
 
+        tokens
+    }
+
+    fn parse(&mut self, raw_tokens_vector: Vec<RawToken>) -> Vec<Instruction> {
+        let mut instructions = Vec::new();
         
+        let mut section = Section::TEXT;
+        let mut token_counter = 0;
+        while token_counter < raw_tokens_vector.len() {
+            let raw_token = match raw_tokens_vector.get(token_counter) {
+                Some(token) => token.clone(),
+                None => {break;},
+            };
+            let next_raw_token = match raw_tokens_vector.get(token_counter+1) {
+                Some(token) => token.clone(),
+                None => {break;},
+            };
+
+            match raw_token.get_token().as_str() {
+                ".data" => { section = Section::DATA; token_counter += 1; },
+                ".text" => { section = Section::TEXT; token_counter += 1; },
+                _ => {
+                    match section {
+                        Section::DATA => {
+                            //TODO
+                        },
+                        Section::TEXT => {
+                            //TODO
+                        }
+                    }
+                }
+            }
+        }
+        /*
+        for raw_token in raw_tokens_vector {
+
+
+
+
+            match raw_token.get_token().as_str() {
+                ".data" => { section = Section::DATA; },
+                ".text" => { section = Section::TEXT; },
+            }
+        }
+        */
+        instructions
     }
 }
 

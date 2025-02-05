@@ -33,7 +33,7 @@ impl VirtualMachine {
 
     pub fn run(&mut self) {
         let tokens = self.tokenize();
-        self.memory = self.parse(tokens);
+        //self.memory = self.parse(tokens);
     }
 
     fn tokenize(&mut self) -> Vec<RawToken> {
@@ -41,7 +41,7 @@ impl VirtualMachine {
             Ok(content) => content,
             Err(_) => {panic!("Error reading file");},
         };
-        println!("Raw content as vec: {:?}", Vec::from(raw_content.clone()));
+        println!("Raw content as vec: {}", raw_content);
         let mut tokens = Vec::new();
         let mut raw_token = RawToken::new();
         let mut is_literal_str = false;
@@ -81,6 +81,7 @@ impl VirtualMachine {
                         raw_token.push('"');
                         raw_token.line = line_count;
                         raw_token.col = col_count;
+
                         col_count += 1;
                         
                     },
@@ -89,7 +90,13 @@ impl VirtualMachine {
                             tokens.push( raw_token.clone() );
                             raw_token.clear();
                         }
-                        raw_token.push(',');
+
+                        let mut comma_raw_token = RawToken::new();
+                        comma_raw_token.push(',');
+                        comma_raw_token.line = line_count;
+                        comma_raw_token.col = col_count;
+                        tokens.push( comma_raw_token.clone() );
+
                         col_count += 1;
 
                     },
@@ -98,29 +105,32 @@ impl VirtualMachine {
                             tokens.push( raw_token.clone() );
                             raw_token.clear();
                         }
+                        
                         col_count += 1;
                     },
                     '\n' => {
                         if !raw_token.is_empty() {
-                            tokens.push(
-                                raw_token.clone(),
-                            );
+                            tokens.push( raw_token.clone() );
                             raw_token.clear();
                         }
+
                         line_count += 1;
                         col_count = 1;
                     },
                     _ => {
-                        if !raw_token.is_empty() {
+                        if raw_token.is_empty() { 
                             raw_token.line = line_count;
                             raw_token.col = col_count;
                         }
                         raw_token.push(c);
+
                         col_count += 1;
                     },
                 }
-                //println!("{} --> Line: {} | Col: {} | is_literal_str={}",c ,line_count, col_count, is_literal_str);
             }
+
+            // ==== Serve para identificar um separador de tokens, no caso, a virgula (,) ====
+            /*
             let last_raw_token_char = raw_token.get_token().chars().last();
             if last_raw_token_char == Some(',') {
                 tokens.push(
@@ -128,7 +138,9 @@ impl VirtualMachine {
                 );
                 raw_token.clear();
             }
-            if i == raw_content.len()-1 {
+            */
+            // ==== Serve para ver se é o último caractere do arquivo, e se for, adiciona-lo como token ====
+            if i == raw_content.len()-1 && !raw_token.is_empty() {
                 if !raw_token.is_empty() {
                     tokens.push(
                         raw_token.clone(),

@@ -1,4 +1,6 @@
 
+use std::{collections::HashMap, os::raw, u32::MAX};
+
 use crate::interpreter::token::RawToken;
 use super::{instruction::Instruction, token};
 
@@ -14,9 +16,11 @@ pub struct VirtualMachine {
     pc: u32, // Program Counter
     
     sp: u32, // Stack Pointer
-    stack: [i8; MAX_STACK_SIZE ], // Stack
+    stack: [i16; MAX_STACK_SIZE ], // Stack
 
     memory: Vec<Instruction>, // Memory
+
+    symbol_table: HashMap<String, u32>, // Symbol Table, used to store the address of labels
 }
 
 impl VirtualMachine {
@@ -25,15 +29,32 @@ impl VirtualMachine {
             file_path: file_path.to_string(),
             ac: 0,
             pc: 0,
-            sp: u32::MAX,
+            sp: MAX_STACK_SIZE as u32,
             memory: Vec::new(),
             stack: [0; MAX_STACK_SIZE],
+            symbol_table: HashMap::new(),
         }
     }
 
     pub fn run(&mut self) {
         let tokens = self.tokenize();
-        //self.memory = self.parse(tokens);
+        self.memory = self.parse(tokens);
+        
+        self.print_stack();
+        self.print_symbol_table();
+    }
+    fn print_stack(&self) {
+        println!("======== Stack ========");
+        for i in ((self.sp as usize) .. MAX_STACK_SIZE).rev() {
+            println!("Stack[{}]: {}", i, self.stack[i]);
+        }
+    }
+
+    fn print_symbol_table(&self) {
+        println!("======== Symbol Table ========");
+        for i in 0..self.symbol_table.len() {
+            println!("{} --> {} :: {}", i, self.symbol_table.keys().nth(i).unwrap(), self.symbol_table.values().nth(i).unwrap());
+        }
     }
 
     fn tokenize(&mut self) -> Vec<RawToken> {
@@ -45,8 +66,8 @@ impl VirtualMachine {
         let mut tokens = Vec::new();
         let mut raw_token = RawToken::new();
         let mut is_literal_str = false;
-        let mut line_count = 1;
-        let mut col_count = 1;
+        let mut line_counter = 1;
+        let mut col_counter = 1;
         for (i, c) in raw_content.chars().enumerate() {
             if c == '\r' {
                 continue;
@@ -61,16 +82,16 @@ impl VirtualMachine {
                             raw_token.clone()
                         );
                         raw_token.clear();
-                        col_count += 1;
+                        col_counter += 1;
                     },
                     '\n' => { 
                         raw_token.push(' ');
-                        line_count += 1;
-                        col_count += 1;
+                        line_counter += 1;
+                        col_counter += 1;
                     },
                     _ => { 
                         raw_token.push(c);
-                        col_count += 1;
+                        col_counter += 1;
                     },
                 }
 
@@ -79,10 +100,10 @@ impl VirtualMachine {
                     '"' => { // se for o início de uma literal string
                         is_literal_str = true;
                         raw_token.push('"');
-                        raw_token.line = line_count;
-                        raw_token.col = col_count;
+                        raw_token.line = line_counter;
+                        raw_token.col = col_counter;
 
-                        col_count += 1;
+                        col_counter += 1;
                         
                     },
                     ',' => { // e.g.: 4,4, 2, 3 -> '4', ',', '4', ',', '2', ',', '3'
@@ -93,11 +114,11 @@ impl VirtualMachine {
 
                         let mut comma_raw_token = RawToken::new();
                         comma_raw_token.push(',');
-                        comma_raw_token.line = line_count;
-                        comma_raw_token.col = col_count;
+                        comma_raw_token.line = line_counter;
+                        comma_raw_token.col = col_counter;
                         tokens.push( comma_raw_token.clone() );
 
-                        col_count += 1;
+                        col_counter += 1;
 
                     },
                     ' ' => {
@@ -106,7 +127,7 @@ impl VirtualMachine {
                             raw_token.clear();
                         }
                         
-                        col_count += 1;
+                        col_counter += 1;
                     },
                     '\n' => {
                         if !raw_token.is_empty() {
@@ -114,31 +135,20 @@ impl VirtualMachine {
                             raw_token.clear();
                         }
 
-                        line_count += 1;
-                        col_count = 1;
+                        line_counter += 1;
+                        col_counter = 1;
                     },
                     _ => {
                         if raw_token.is_empty() { 
-                            raw_token.line = line_count;
-                            raw_token.col = col_count;
+                            raw_token.line = line_counter;
+                            raw_token.col = col_counter;
                         }
                         raw_token.push(c);
 
-                        col_count += 1;
+                        col_counter += 1;
                     },
                 }
             }
-
-            // ==== Serve para identificar um separador de tokens, no caso, a virgula (,) ====
-            /*
-            let last_raw_token_char = raw_token.get_token().chars().last();
-            if last_raw_token_char == Some(',') {
-                tokens.push(
-                    raw_token.clone(),
-                );
-                raw_token.clear();
-            }
-            */
             // ==== Serve para ver se é o último caractere do arquivo, e se for, adiciona-lo como token ====
             if i == raw_content.len()-1 && !raw_token.is_empty() {
                 if !raw_token.is_empty() {
@@ -150,57 +160,192 @@ impl VirtualMachine {
             }
             
         }
+        
         println!("======== Tokens ========");
         for i in 0..tokens.len() {
             println!("{} --> {:?}",i , tokens[i]);
         }
-
+         
         tokens
     }
 
     fn parse(&mut self, raw_tokens_vector: Vec<RawToken>) -> Vec<Instruction> {
-        let mut instructions = Vec::new();
-        
+        // ==== PRIMEIRA PASSAGEM ====
         let mut section = Section::TEXT;
         let mut token_counter = 0;
-        while token_counter < raw_tokens_vector.len() {
-            let raw_token = match raw_tokens_vector.get(token_counter) {
-                Some(token) => token.clone(),
-                None => {break;},
-            };
-            let next_raw_token = match raw_tokens_vector.get(token_counter+1) {
-                Some(token) => token.clone(),
-                None => {break;},
-            };
+        'token_counter_loop: while token_counter < raw_tokens_vector.len() {
+            let actual_raw_token_option = raw_tokens_vector.get(token_counter).cloned();
 
-            match raw_token.get_token().as_str() {
-                ".data" => { section = Section::DATA; token_counter += 1; },
-                ".text" => { section = Section::TEXT; token_counter += 1; },
-                _ => {
-                    match section {
-                        Section::DATA => {
-                            //TODO
-                        },
-                        Section::TEXT => {
-                            //TODO
+            match actual_raw_token_option {
+                Some(actual_raw_token) => {
+                    match actual_raw_token.get_token().as_str() {
+                        ".data" => { section = Section::DATA; },
+                        ".text" => { section = Section::TEXT; },
+                        _ => {
+                            match section {
+                                Section::DATA => {
+                                    /* logica
+                                     * pegar o token atual, ver se ele é uma label, se for:
+                                     *    pegar o próximo token, ver se ele é .word, .byte, .ascii ou .asciiz
+                                     *    se for ver se o proximo token é um valor valido e se tem virgula após ele,
+                                     *    se for, ir adicionando os valores numa Vec<i8> de acordo com o tipo do .word, .byte, .ascii ou .asciiz
+                                     *    caso não tenha virgula, adicionar apenas o único valor no Vec<i8> e ir para o próximo token, que pode ser uma nova label
+                                     */
+
+                                    
+                                    if actual_raw_token.is_label() {
+                                        let label = actual_raw_token.get_token();
+                                        let next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter+1);
+                                        if next_raw_token_option.is_none() {
+                                            panic!("Error: Expected .word, .byte, .ascii or .asciiz after label on line {}", actual_raw_token.line);
+                                        } else {
+                                            
+                                            let next_raw_token = next_raw_token_option.unwrap();
+                                            match next_raw_token.get_token().as_str() {
+                                                ".word" | ".byte" => {
+                                                    /*
+                                                     * ir pegando todos os valores até não ter mais virgula
+                                                     * nesse momento:
+                                                     *      actual_raw_token = Label
+                                                     *      next_raw_token = .word ou .byte
+                                                     *      next_next_raw_token = <valor>
+                                                     */
+
+                                                    let mut aux_value_counter = token_counter + 2; // <valor>
+                                                    let mut values: Vec<i16> = get_comma_separated_values(&raw_tokens_vector, aux_value_counter);
+                                                    
+
+                                                    if values.len() == 0 {
+                                                        panic!("Error: Expected at least one value after label on line {}", actual_raw_token.line);
+                                                    } else {
+                                                        self.symbol_table.insert(
+                                                            label,
+                                                            self.sp -1 ,
+                                                        );
+
+                                                        for v in &values {
+                                                            self.sp -= 1;
+                                                            self.stack[self.sp as usize] = v.clone();
+                                                        }
+
+                                                        token_counter += values.len()*2 + 1;
+                                                        continue;
+                                                    }
+
+                                                },
+                                                ".ascii" | ".asciiz" => {
+                                                    let next_next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter+2);
+                                                    match next_next_raw_token_option {
+                                                        Some(next_next_raw_token) => {
+                                                            if next_next_raw_token.is_string_literal()  {
+                                                                match next_next_raw_token.get_string_literal() {
+                                                                    Some(string_literal) => {
+                                                                        
+                                                                        self.symbol_table.insert(
+                                                                            label,
+                                                                            self.sp - 1,
+                                                                        );
+                                                                        
+                                                                        
+                                                                        let mut string_literal_bytes = string_literal.as_bytes().to_vec();
+                                                                        if next_raw_token.get_token() == ".ascii" {
+                                                                            string_literal_bytes = string_literal_bytes.to_vec(); // isso de começar em 2 é para ignorar o '\' e o 'n' do final da string_literal
+                                                                        } else {
+                                                                            string_literal_bytes = string_literal_bytes.to_vec();
+                                                                            string_literal_bytes.push( 0 ); // push '\0'
+                                                                        }
+                                                                        /* 
+                                                                         *  NÃO SEI SE ISSO É NECESSÁRIO, POIS NÃO SEI SE A ORDEM DOS BYTES IMPORTA
+                                                                         *  O mais convencional é que e.g.:
+                                                                         *  "abc" -> [97, 98, 99]
+                                                                         *  stack:
+                                                                         *    127 -> 99 (c)
+                                                                         *    126 -> 98 (b)
+                                                                         *    125 -> 97 (a)
+                                                                         * 
+                                                                         *  ou seja, o primeiro byte da string literal é o último a ser colocado na stack (a stack cresce de cima para baixo)
+                                                                         */
+                                                                        println!("----> string_literal = {:?}", string_literal_bytes);
+                                                                        string_literal_bytes.reverse(); 
+                                                                        for b in string_literal_bytes {
+                                                                            self.sp -= 1;
+                                                                            self.stack[self.sp as usize] = b as i16
+                                                                        }
+
+                                                                        token_counter += 3;
+                                                                        continue;
+                                                                    },
+                                                                    None => {
+                                                                        panic!("Error: Expected a string after .ascii on line {}", actual_raw_token.line);
+                                                                    }
+                                                                }
+                                                            } else {
+                                                                panic!("Error: Expected a string after .ascii on line {}", actual_raw_token.line);
+                                                            }
+                                                        },
+                                                        None => {
+                                                            panic!("Error: Expected a string after .ascii on line {}", actual_raw_token.line);
+                                                        }
+                                                    }
+                                                },
+                                                _ => {
+                                                    panic!("Error: Expected .word, .byte, .ascii or .asciiz after label on line {}", actual_raw_token.line);
+                                                }
+                                            }
+                                
+                                        }
+                                    } else {
+                                        panic!("Error: Expected a label on line {}, {}", actual_raw_token.line, actual_raw_token.col);
+                                    }
+                                },
+                                Section::TEXT => {
+
+                                },
+                            }
                         }
                     }
-                }
+                },
+                None => { break 'token_counter_loop; },
             }
+            token_counter += 1;
         }
-        /*
-        for raw_token in raw_tokens_vector {
 
-
-
-
-            match raw_token.get_token().as_str() {
-                ".data" => { section = Section::DATA; },
-                ".text" => { section = Section::TEXT; },
-            }
-        }
-        */
+        let mut instructions = Vec::new();
         instructions
     }
 }
 
+fn get_nth_token(raw_tokens: &Vec<RawToken>, n: usize) -> Option<RawToken> {
+    raw_tokens.get(n).cloned()
+}
+
+fn get_comma_separated_values(vector: &Vec<RawToken>, offset: usize) -> Vec<i16> {
+    let mut values = Vec::new();
+    let mut aux_value_counter = offset;
+    'aux_value_counter_loop: while aux_value_counter < vector.len() {
+        let aux_raw_token_option = vector.get(aux_value_counter).cloned();
+        match aux_raw_token_option {
+            Some(aux_raw_token) => {
+                match aux_raw_token.get_token().as_str() {
+                    "," => {
+                        aux_value_counter += 1;
+                    },
+                    _ => {
+                        let value = aux_raw_token.get_token().parse::<i16>();
+                        match value {
+                            Ok(v) => {
+                                values.push(v);
+                                aux_value_counter += 1;
+                            },
+                            Err(_) => {
+                                break 'aux_value_counter_loop;
+                            }
+                        }
+                    }
+                }
+            },
+            None => { break 'aux_value_counter_loop; },
+        }
+    }
+    values
+}

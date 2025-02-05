@@ -36,4 +36,23 @@ impl RawToken {
     pub fn is_string_literal(&self) -> bool {
         self.token.chars().nth(0) == Some('"') && self.token.chars().nth(self.token.len()-1) == Some('"')
     }
+
+    pub fn is_label(&self) -> bool {
+        self.token.chars().nth(self.token.len()-1) == Some(':')
+    }
+
+    pub fn get_string_literal(&self) -> Option<String> {
+        let string_to_process = self.get_token();
+        let mut processed_string = String::new();
+        if string_to_process.len() >= 2 && string_to_process.chars().nth(0) == Some('"') && string_to_process.chars().nth(string_to_process.len()-1) == Some('"') {
+            for i in 1..string_to_process.len()-1 {
+                processed_string.push(string_to_process.chars().nth(i).unwrap());
+            }
+        } else {
+            return None;
+        }
+
+        Some(processed_string)
+
+    }
 }

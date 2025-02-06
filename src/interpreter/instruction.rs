@@ -1,8 +1,8 @@
-use super::opcodes::Opcode;
+use super::opcode::Opcode;
 
-
-
+#[derive(Debug, Clone, Copy)]
 pub struct  Instruction {
     pub opcode: Opcode,
-    pub arg: u16
+    pub arg: i16
 }
+

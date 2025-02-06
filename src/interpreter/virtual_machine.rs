@@ -1,10 +1,9 @@
-
 use std::{collections::HashMap, os::raw, u32::MAX};
 
-use crate::interpreter::token::RawToken;
-use super::{instruction::Instruction, token};
+use crate::interpreter::raw_token::RawToken;
+use super::{instruction::Instruction, opcode::Opcode, raw_symbol::{RawSymbol, RawSymbolType}};
 
-const MAX_STACK_SIZE: usize = 2048;
+const STACK_SIZE: usize = 2048;
 
 enum Section {
     DATA,
@@ -16,9 +15,9 @@ pub struct VirtualMachine {
     pc: u32, // Program Counter
     
     sp: u32, // Stack Pointer
-    stack: [i16; MAX_STACK_SIZE ], // Stack
+    stack: [i16; STACK_SIZE ], // Stack
 
-    memory: Vec<Instruction>, // Memory
+    memory: Vec<Instruction>, // Memory, used to store the instructions
 
     symbol_table: HashMap<String, u32>, // Symbol Table, used to store the address of labels
 }
@@ -29,23 +28,23 @@ impl VirtualMachine {
             file_path: file_path.to_string(),
             ac: 0,
             pc: 0,
-            sp: MAX_STACK_SIZE as u32,
+            sp: STACK_SIZE as u32,
             memory: Vec::new(),
-            stack: [0; MAX_STACK_SIZE],
+            stack: [0; STACK_SIZE],
             symbol_table: HashMap::new(),
         }
     }
 
     pub fn run(&mut self) {
         let tokens = self.tokenize();
-        self.memory = self.parse(tokens);
+        let aux = self.first_pass(tokens);
         
         self.print_stack();
         self.print_symbol_table();
     }
     fn print_stack(&self) {
         println!("======== Stack ========");
-        for i in ((self.sp as usize) .. MAX_STACK_SIZE).rev() {
+        for i in ((self.sp as usize) .. STACK_SIZE).rev() {
             println!("Stack[{}]: {}", i, self.stack[i]);
         }
     }
@@ -53,7 +52,7 @@ impl VirtualMachine {
     fn print_symbol_table(&self) {
         println!("======== Symbol Table ========");
         for i in 0..self.symbol_table.len() {
-            println!("{} --> {} :: {}", i, self.symbol_table.keys().nth(i).unwrap(), self.symbol_table.values().nth(i).unwrap());
+            println!("{} --> {} :: {:?}", i, self.symbol_table.keys().nth(i).unwrap(), self.symbol_table.values().nth(i).unwrap());
         }
     }
 
@@ -62,7 +61,7 @@ impl VirtualMachine {
             Ok(content) => content,
             Err(_) => {panic!("Error reading file");},
         };
-        println!("Raw content as vec: {}", raw_content);
+        println!("Raw content as vec: \n{}", raw_content);
         let mut tokens = Vec::new();
         let mut raw_token = RawToken::new();
         let mut is_literal_str = false;
@@ -169,9 +168,10 @@ impl VirtualMachine {
         tokens
     }
 
-    fn parse(&mut self, raw_tokens_vector: Vec<RawToken>) -> Vec<Instruction> {
+    fn first_pass(&mut self, raw_tokens_vector: Vec<RawToken>) -> Vec<RawToken> {
         // ==== PRIMEIRA PASSAGEM ====
         let mut section = Section::TEXT;
+        let mut memory_label_counter = 0;
         let mut token_counter = 0;
         'token_counter_loop: while token_counter < raw_tokens_vector.len() {
             let actual_raw_token_option = raw_tokens_vector.get(token_counter).cloned();
@@ -220,7 +220,7 @@ impl VirtualMachine {
                                                     } else {
                                                         self.symbol_table.insert(
                                                             label,
-                                                            self.sp -1 ,
+                                                            self.sp -1,
                                                         );
 
                                                         for v in &values {
@@ -243,7 +243,7 @@ impl VirtualMachine {
                                                                         
                                                                         self.symbol_table.insert(
                                                                             label,
-                                                                            self.sp - 1,
+                                                                            self.sp -1,
                                                                         );
                                                                         
                                                                         
@@ -299,19 +299,70 @@ impl VirtualMachine {
                                     }
                                 },
                                 Section::TEXT => {
-
-                                },
+                                    /*  logica
+                                     *  primeiro, ver se o token atual é uma label, se for:
+                                     *      adicionar a label na symbol_table com o valor do ''pc'', 
+                                     *      raw_token.label <- label,
+                                     *      
+                                     */
+                                    if actual_raw_token.is_label() {
+                                        let label = actual_raw_token.get_token();
+                                        let mut next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter + 1);
+                                        match next_raw_token_option.as_mut() {
+                                            Some(next_raw_token) => {
+                                                if next_raw_token.is_opcode() {
+                                                    self.symbol_table.insert(
+                                                        label,
+                                                        memory_label_counter,
+                                                    );
+                                                    
+                                                    if Opcode::is_argumented_opcode(next_raw_token.get_token().as_str()) {
+                                                        token_counter += 2;
+                                                    } else {
+                                                        token_counter += 1;
+                                                    }
+                                                    /*  NOTA:
+                                                     *      Aqui não precisa incrementar o memory_label_counter, 
+                                                     *      pois labels não são contadas como instruções, então o contador 
+                                                     *      de instruções é incrementado apenas quando se tem uma instrução 
+                                                     *      válida
+                                                     */
+                                                    continue;
+                                                } else {
+                                                    panic!("Error: Expected an instruction after label on line {}", actual_raw_token.line);
+                                                }
+                                            },
+                                            None => {
+                                                panic!("Error: Expected an instruction after label on line {}", actual_raw_token.line);
+                                            }
+                                        }
+                                    } else {
+                                        if actual_raw_token.is_opcode() {
+                                            if Opcode::is_argumented_opcode(actual_raw_token.get_token().as_str()) {
+                                                token_counter += 2;
+                                            } else {
+                                                token_counter += 1;
+                                            }
+                                            memory_label_counter += 1;
+                                        } else {
+                                            panic!("Error: Expected an valid instruction on line {}, col {}", actual_raw_token.line, actual_raw_token.col);
+                                        }
+                                
+                                        continue;
+                                    }
+                                }
                             }
                         }
                     }
                 },
-                None => { break 'token_counter_loop; },
+                None => { 
+                    break 'token_counter_loop; 
+                }
             }
             token_counter += 1;
         }
 
-        let mut instructions = Vec::new();
-        instructions
+        raw_tokens_vector
     }
 }
 

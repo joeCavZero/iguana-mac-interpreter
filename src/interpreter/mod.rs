@@ -1,4 +1,5 @@
 pub mod virtual_machine;
 mod instruction;
-mod opcodes;
-mod token;
+mod opcode;
+mod raw_token;
+mod raw_symbol;

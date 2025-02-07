@@ -37,10 +37,12 @@ impl VirtualMachine {
 
     pub fn run(&mut self) {
         let tokens = self.tokenize();
-        let aux = self.first_pass(tokens);
+        self.first_pass(&tokens);
+        self.second_pass(&tokens);
         
         self.print_stack();
         self.print_symbol_table();
+        self.print_memory();
     }
     fn print_stack(&self) {
         println!("======== Stack ========");
@@ -53,6 +55,13 @@ impl VirtualMachine {
         println!("======== Symbol Table ========");
         for i in 0..self.symbol_table.len() {
             println!("{} --> {} :: {:?}", i, self.symbol_table.keys().nth(i).unwrap(), self.symbol_table.values().nth(i).unwrap());
+        }
+    }
+
+    fn print_memory(&self) {
+        println!("======== Memory ========");
+        for i in 0..self.memory.len() {
+            println!("{} --> {:?}", i, self.memory[i]);
         }
     }
 
@@ -168,7 +177,7 @@ impl VirtualMachine {
         tokens
     }
 
-    fn first_pass(&mut self, raw_tokens_vector: Vec<RawToken>) -> Vec<RawToken> {
+    fn first_pass(&mut self, raw_tokens_vector: &Vec<RawToken>){
         // ==== PRIMEIRA PASSAGEM ====
         let mut section = Section::TEXT;
         let mut memory_label_counter = 0;
@@ -194,7 +203,7 @@ impl VirtualMachine {
 
                                     
                                     if actual_raw_token.is_label() {
-                                        let label = actual_raw_token.get_token();
+                                        let label = actual_raw_token.get_token()[..actual_raw_token.get_token().len()-1].to_string();
                                         let next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter+1);
                                         if next_raw_token_option.is_none() {
                                             panic!("Error: Expected .word, .byte, .ascii or .asciiz after label on line {}", actual_raw_token.line);
@@ -306,7 +315,7 @@ impl VirtualMachine {
                                      *      
                                      */
                                     if actual_raw_token.is_label() {
-                                        let label = actual_raw_token.get_token();
+                                        let label = actual_raw_token.get_token()[..actual_raw_token.get_token().len()-1].to_string();
                                         let mut next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter + 1);
                                         match next_raw_token_option.as_mut() {
                                             Some(next_raw_token) => {
@@ -345,7 +354,8 @@ impl VirtualMachine {
                                             }
                                             memory_label_counter += 1;
                                         } else {
-                                            panic!("Error: Expected an valid instruction on line {}, col {}", actual_raw_token.line, actual_raw_token.col);
+                                            memory_label_counter += 1; // Não sei se isso é necessário, talvez isso cause um bug no futuro
+                                            token_counter += 1;
                                         }
                                 
                                         continue;
@@ -361,8 +371,129 @@ impl VirtualMachine {
             }
             token_counter += 1;
         }
+    }
 
-        raw_tokens_vector
+    fn second_pass(&mut self, raw_tokens: &Vec<RawToken>) {
+        let mut section = Section::TEXT;
+        let mut operation_counter = 0;
+        let mut token_counter = 0;
+        'token_counter_loop: while token_counter < raw_tokens.len() {
+            println!("----> token {} :: operation_counter = {}, token_counter = {}",raw_tokens[token_counter].get_token(), operation_counter, token_counter);
+            let actual_raw_token_option = raw_tokens.get(token_counter).cloned();
+            match actual_raw_token_option {
+                Some(actual_raw_token) => {
+                    match actual_raw_token.get_token().as_str() {
+                        ".data" => { section = Section::DATA; token_counter += 1; },
+                        ".text" => { section = Section::TEXT; token_counter += 1; },
+                        _ => {
+                            match section {
+                                Section::DATA => {},
+                                Section::TEXT => {
+                                    if actual_raw_token.is_opcode() {
+                                        let mut opcode = actual_raw_token.get_opcode();
+                                        if Opcode::is_argumented_opcode(actual_raw_token.get_token().as_str()) {
+                                            match opcode {
+                                                Opcode::Jpos | Opcode::Jzer | Opcode::Jump | Opcode::Jneg | Opcode::Jnze | Opcode::Call => {
+                                                    let next_raw_token_option = get_nth_token(&raw_tokens, token_counter + 1);
+                                                    match next_raw_token_option {
+                                                        Some(next_raw_token) => {
+                                                            if next_raw_token.is_label() {
+                                                                let label = next_raw_token.get_token();
+                                                                let label_address_option = self.symbol_table.get(&label);
+                                                                match label_address_option {
+                                                                    Some(label_address) => {
+                                                                        //let address_offset = operation_counter - *label_address;
+                                                                        self.memory.push(
+                                                                            Instruction {
+                                                                                opcode: opcode,
+                                                                                arg: *label_address as i16,
+                                                                            }
+                                                                        );
+
+                                                                        operation_counter += 1;
+                                                                        token_counter += 2;
+                                                                    },
+                                                                    None => {
+                                                                        panic!("Error: Label {} not found on line {}", label, next_raw_token.line);
+                                                                    }
+                                                                }
+                                                            } else {
+                                                                let value_result = next_raw_token.get_token().parse::<i16>();
+                                                                match value_result {
+                                                                    Ok(value) => {
+                                                                        self.memory.push(
+                                                                            Instruction {
+                                                                                opcode: opcode,
+                                                                                arg: value,
+                                                                            }
+                                                                        );
+                                                                        operation_counter += 1;
+                                                                        token_counter += 2;
+                                                                    },
+                                                                    Err(_) => {
+                                                                        panic!("Error: Expected a label or a valid value after call on line {}", actual_raw_token.line);
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        None => {
+                                                            panic!("Error: Expected a label or a value after call on line {}", actual_raw_token.line);
+                                                        }
+                                                    }
+                                                },
+                                                Opcode::Lodd | Opcode::Stod | Opcode::Addd | Opcode::Subd | Opcode::Loco | Opcode::Lodl | Opcode::Stol | Opcode::Addl | Opcode::Subl | Opcode::Insp | Opcode::Desp => {
+                                                    let next_raw_token_option = get_nth_token(&raw_tokens, token_counter + 1);
+                                                    match next_raw_token_option {
+                                                        Some(next_raw_token) => {
+                                                            let value_result = next_raw_token.get_token().parse::<i16>();
+                                                            match value_result {
+                                                                Ok(value) => {
+                                                                    self.memory.push(
+                                                                        Instruction {
+                                                                            opcode: opcode,
+                                                                            arg: value,
+                                                                        }
+                                                                    );
+                                                                    operation_counter += 1;
+                                                                    token_counter += 2;
+                                                                },
+                                                                Err(_) => {
+                                                                    panic!("Error: Expected a valid value after {} on line {}", actual_raw_token.get_token(), actual_raw_token.line);
+                                                                }
+                                                            }
+                                                        },
+                                                        None => {
+                                                            panic!("Error: Expected a value after {} on line {}", actual_raw_token.get_token(), actual_raw_token.line);
+                                                        }
+                                                    }
+                                                },
+                                                _ => {
+                                                    panic!("Never should reach here");
+                                                }
+                                            }
+                                        } else { // caso não seja uma instrução com argumentos
+                                            self.memory.push(
+                                                Instruction {
+                                                    opcode: opcode,
+                                                    arg: 0,
+                                                }
+                                            );
+                                            operation_counter += 1;
+                                            token_counter += 1;
+                                        }
+                                    } else if actual_raw_token.is_label() {
+                                        token_counter += 1;
+                                    } else {
+                                        panic!("Error: Expected an valid instruction on line {}, col {}", actual_raw_token.line, actual_raw_token.col);
+                                    }
+                                },
+                            }
+                        },
+                    }
+                },
+                None => { break 'token_counter_loop; }
+            }
+        }
     }
 }
 

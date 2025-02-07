@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use crate::interpreter::token::Token;
-use super::{instruction::Instruction, opcode::Opcode};
+use super::{instruction::Instruction, logkit, opcode::Opcode};
 
 const STACK_SIZE: usize = 2048;
 
@@ -74,7 +74,10 @@ impl VirtualMachine {
     fn tokenize(&mut self) -> Vec<Token> {
         let raw_content = match std::fs::read_to_string(&self.file_path) {
             Ok(content) => content.replace("\r", ""),
-            Err(_) => {panic!("Error reading file");},
+            Err(_) => {
+                logkit::exit_with_error_message("Error reading file");
+                String::new()
+            },
         };
         let mut is_comment = false;
         let mut tokens = Vec::new();
@@ -216,7 +219,7 @@ impl VirtualMachine {
                                         let label = actual_raw_token.get_token()[..actual_raw_token.get_token().len()-1].to_string();
                                         let next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter+1);
                                         if next_raw_token_option.is_none() {
-                                            panic!("Error: Expected .word, .byte, .ascii or .asciiz after label on line {}", actual_raw_token.line);
+                                            logkit::exit_with_positional_error_message("Expected .word, .byte, .ascii or .asciiz after label", actual_raw_token.line, actual_raw_token.col);
                                         } else {
                                             
                                             let next_raw_token = next_raw_token_option.unwrap();
@@ -235,7 +238,7 @@ impl VirtualMachine {
                                                     
 
                                                     if values.len() == 0 {
-                                                        panic!("Error: Expected at least one value after label on line {}", actual_raw_token.line);
+                                                        logkit::exit_with_positional_error_message("Expected at least one value after label", actual_raw_token.line, actual_raw_token.col);
                                                     } else {
                                                         self.symbol_table.insert(
                                                             label,
@@ -294,26 +297,26 @@ impl VirtualMachine {
                                                                         continue;
                                                                     },
                                                                     None => {
-                                                                        panic!("Error: Expected a string after .ascii on line {}", actual_raw_token.line);
+                                                                        logkit::exit_with_positional_error_message("Expecter a string after .ascii or asciiz", actual_raw_token.line, actual_raw_token.col);
                                                                     }
                                                                 }
                                                             } else {
-                                                                panic!("Error: Expected a string after .ascii on line {}", actual_raw_token.line);
+                                                                logkit::exit_with_positional_error_message("Expecter a string after .ascii or asciiz", actual_raw_token.line, actual_raw_token.col);
                                                             }
                                                         },
                                                         None => {
-                                                            panic!("Error: Expected a string after .ascii on line {}", actual_raw_token.line);
+                                                            logkit::exit_with_positional_error_message("Expecter a string after .ascii or asciiz", actual_raw_token.line, actual_raw_token.col);
                                                         }
                                                     }
                                                 },
                                                 _ => {
-                                                    panic!("Error: Expected .word, .byte, .ascii or .asciiz after label on line {}", actual_raw_token.line);
+                                                    logkit::exit_with_positional_error_message("Expected .word, .byte, .ascii or .asciiz after label", actual_raw_token.line, actual_raw_token.col);
                                                 }
                                             }
                                 
                                         }
                                     } else {
-                                        panic!("Error: Expected a label on line {}, {}", actual_raw_token.line, actual_raw_token.col);
+                                        logkit::exit_with_positional_error_message("Expected a label", actual_raw_token.line, actual_raw_token.col);
                                     }
                                 },
                                 Section::Text => {
@@ -348,11 +351,11 @@ impl VirtualMachine {
                                                      */
                                                     continue;
                                                 } else {
-                                                    panic!("Error: Expected an instruction after label on line {}", actual_raw_token.line);
+                                                    logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
                                                 }
                                             },
                                             None => {
-                                                panic!("Error: Expected an instruction after label on line {}", actual_raw_token.line);
+                                                logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
                                             }
                                         }
                                     } else {
@@ -428,7 +431,7 @@ impl VirtualMachine {
                                                                         token_counter += 2;
                                                                     },
                                                                     None => {
-                                                                        panic!("Error: Label {} not found on line {}", label, next_raw_token.line);
+                                                                        logkit::exit_with_positional_error_message(format!("Error: Label {} not found on line {}", label, next_raw_token.line).as_str(), actual_raw_token.line, actual_raw_token.col);
                                                                     }
                                                                 }
                                                             } else {
@@ -447,18 +450,18 @@ impl VirtualMachine {
                                                                         token_counter += 2;
                                                                     },
                                                                     Err(_) => {
-                                                                        panic!("Error: Expected a label or a valid value after call on line {}", actual_raw_token.line);
+                                                                        logkit::exit_with_positional_error_message("Expected a label or a valid value after call", actual_raw_token.line, actual_raw_token.col);
                                                                     }
                                                                 }
                                                             }
                                                         },
                                                         None => {
-                                                            panic!("Error: Expected a label or a value after call on line {}", actual_raw_token.line);
+                                                            logkit::exit_with_positional_error_message("Expected a label or a value after call", actual_raw_token.line, actual_raw_token.col);
                                                         }
                                                     }
                                                 },
                                                 _ => {
-                                                    panic!("Never should reach here");
+                                                    logkit::exit_with_error_message( "Never should reach here" );
                                                 }
                                             }
                                         } else { // caso não seja uma instrução com argumentos
@@ -476,7 +479,7 @@ impl VirtualMachine {
                                     } else if actual_raw_token.is_label() {
                                         token_counter += 1;
                                     } else {
-                                        panic!("Error: Expected an valid instruction on line {}, col {}", actual_raw_token.line, actual_raw_token.col);
+                                        logkit::exit_with_positional_error_message("Expected an valid instruction", actual_raw_token.line, actual_raw_token.col);
                                     }
                                 },
                             }
@@ -503,7 +506,7 @@ impl VirtualMachine {
                                     self.ac = *value;
                                 },
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", instruction.arg, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;
@@ -512,7 +515,7 @@ impl VirtualMachine {
                             match self.set_stack_value(instruction.arg as i64, self.ac) {
                                 Ok(_) => {},
                                 Err(_) => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", instruction.arg, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;
@@ -527,7 +530,7 @@ impl VirtualMachine {
                                                     );
                                 },
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", instruction.arg, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;
@@ -537,7 +540,7 @@ impl VirtualMachine {
                                     self.ac -= *value;
                                 },
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", instruction.arg, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;
@@ -569,7 +572,7 @@ impl VirtualMachine {
                                     self.ac = *value;
                                 },
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", instruction.arg, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;
@@ -578,7 +581,7 @@ impl VirtualMachine {
                             match self.set_stack_value(self.sp as i64 - instruction.arg as i64, self.ac) {
                                 Ok(_) => {},
                                 Err(_) => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;
@@ -589,7 +592,7 @@ impl VirtualMachine {
                                     self.ac += *value;
                                 },
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", instruction.arg, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;
@@ -600,8 +603,7 @@ impl VirtualMachine {
                                     self.ac -= *value;
                                 },
                                 None => {
-                                    println!("A stack[2047] = {}", self.stack[2047]);
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", instruction.arg, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;
@@ -625,7 +627,7 @@ impl VirtualMachine {
                             match self.set_stack_value(self.sp as i64, self.pc as i16 + 1) {
                                 Ok(_) => {},
                                 Err(_) => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc = instruction.arg as u32;
@@ -635,7 +637,7 @@ impl VirtualMachine {
                             match self.set_stack_value(self.sp as i64, self.ac) {
                                 Ok(_) => {},
                                 Err(_) => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;
@@ -644,13 +646,14 @@ impl VirtualMachine {
                             let aux = match self.get_stack_value(self.sp as i64) {
                                 Some(value) => value,
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds", self.sp);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                    0
                                 }
                             };
                             match self.set_stack_value(self.ac as i64, aux) {
                                 Ok(_) => {},
                                 Err(_) => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.ac, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.ac).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.sp += 1; // decrementa o sp
@@ -661,7 +664,7 @@ impl VirtualMachine {
                             match self.set_stack_value(self.sp as i64, self.ac) {
                                 Ok(_) => {},
                                 Err(_) => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;
@@ -670,7 +673,8 @@ impl VirtualMachine {
                             self.ac = match self.stack.get(self.sp as usize) {
                                 Some(value) => *value,
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                    0
                                 }
                             };
                             self.sp += 1; // decrementa o sp
@@ -680,7 +684,8 @@ impl VirtualMachine {
                             self.pc = match self.stack.get(self.sp as usize) {
                                 Some(value) => *value as u32,
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                    0
                                 }
                             };
                             self.sp += 1; // decrementa o sp
@@ -689,13 +694,14 @@ impl VirtualMachine {
                             let aux = match self.stack.get(self.sp as usize) {
                                 Some(value) => *value,
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                    0
                                 }
                             };
                             match self.set_stack_value(self.sp as i64, self.ac) {
                                 Ok(_) => {},
                                 Err(_) => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.ac = aux;
@@ -733,7 +739,7 @@ impl VirtualMachine {
                                     println!("{}", value);
                                 },
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
@@ -745,7 +751,7 @@ impl VirtualMachine {
                                     println!("{}", value);
                                 },
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
@@ -757,7 +763,7 @@ impl VirtualMachine {
                                     print!("{}", value);
                                 },
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
@@ -769,7 +775,7 @@ impl VirtualMachine {
                                     print!("{}", value);
                                 },
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
@@ -791,7 +797,7 @@ impl VirtualMachine {
                                     println!("{}", *value as u8 as char);
                                 },
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
@@ -804,7 +810,7 @@ impl VirtualMachine {
                                     println!("{}", *value as u8 as char);
                                 },
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
@@ -816,7 +822,7 @@ impl VirtualMachine {
                                     print!("{}", *value as u8 as char);
                                 },
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
@@ -828,7 +834,7 @@ impl VirtualMachine {
                                     print!("{}", *value as u8 as char);
                                 },
                                 None => {
-                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
                                 }
                             }
 

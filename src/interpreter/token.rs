@@ -1,5 +1,7 @@
 use core::panic;
 
+use crate::interpreter::logkit;
+
 #[derive(Debug, Clone)] 
 pub struct Token {
     token: String,
@@ -97,7 +99,7 @@ impl Token {
                             str_counter += 2;
                         },
                         _ => {
-                            panic!("Invalid escape sequence at line {} and column {}", self.line, self.col + str_counter);
+                            logkit::exit_with_positional_error_message("Invalid escape sequence", self.line, self.col + str_counter);
                         },
                     }
                 } else {

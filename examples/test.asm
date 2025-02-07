@@ -1,5 +1,5 @@
 .data
-COMMA: .ascii ","
+COMMA: .asciii ","
 MAX: .word 10
 ONE: .word 1
 

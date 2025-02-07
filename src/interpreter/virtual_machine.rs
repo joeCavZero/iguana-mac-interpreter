@@ -44,7 +44,7 @@ impl VirtualMachine {
         self.first_pass(&tokens);
         self.second_pass(&tokens);
         
-        self.print_stack();
+        //self.print_stack();
         //self.print_symbol_table();
         //self.print_memory();
 

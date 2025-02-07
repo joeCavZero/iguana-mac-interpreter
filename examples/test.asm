@@ -1,10 +1,18 @@
 .data
-string: .ascii "oooii\n"
+COMMA: .ascii ","
+MAX: .word 10
+ONE: .word 1
+
 .text
-    PRINTSPCHARI 0
-    PRINTSPCHARI 1
-    PRINTSPCHARI 2
-    PRINTSPCHARI 5
-    PRINTSPCHARI 3
-    PRINTSPCHARI 4
-    
+    LODD MAX
+LOOP:
+    PRINTAC
+    SUBD ONE
+    STOD MAX
+    LODD COMMA
+    PRINTACCHAR
+    LODD MAX
+    JNEG END
+    JUMP LOOP
+END:
+    HALT

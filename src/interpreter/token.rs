@@ -65,7 +65,7 @@ impl Token {
         let mut processed_string = String::new();
         let mut str_counter = 0;
         if string_to_process.len() >= 2 && string_to_process.chars().nth(0) == Some('"') && string_to_process.chars().nth(string_to_process.len()-1) == Some('"') {
-            for i in 1..string_to_process.len()-2 {
+            for i in 1..string_to_process.len()-1 {
                 if string_to_process.chars().nth(i) == Some('\\') {
                     match string_to_process.chars().nth(i+1) {
                         Some('n') => {
@@ -98,16 +98,16 @@ impl Token {
                         },
                         _ => {
                             panic!("Invalid escape sequence at line {} and column {}", self.line, self.col + str_counter);
-                        }
+                        },
                     }
                 } else {
                     processed_string.push(string_to_process.chars().nth(i).unwrap());
+                    str_counter += 1;
                 }
             }
         } else {
             return None;
         }
-
         Some(processed_string)
     }
 }

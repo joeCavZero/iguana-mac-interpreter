@@ -1,14 +1,17 @@
-use std::{collections::HashMap, os::raw, u32::MAX};
 
-use crate::interpreter::raw_token::RawToken;
-use super::{instruction::Instruction, opcode::Opcode, raw_symbol::{RawSymbol, RawSymbolType}};
+
+use std::collections::HashMap;
+
+use crate::interpreter::token::Token;
+use super::{instruction::Instruction, opcode::Opcode};
 
 const STACK_SIZE: usize = 2048;
 
 enum Section {
-    DATA,
-    TEXT,
+    Data,
+    Text,
 }
+
 pub struct VirtualMachine {
     file_path: String,
     ac: i16, // Accumulator
@@ -22,6 +25,7 @@ pub struct VirtualMachine {
     symbol_table: HashMap<String, u32>, // Symbol Table, used to store the address of labels
 }
 
+#[allow(dead_code)]
 impl VirtualMachine {
     pub fn new(file_path: &str) -> VirtualMachine {
         VirtualMachine {
@@ -40,9 +44,9 @@ impl VirtualMachine {
         self.first_pass(&tokens);
         self.second_pass(&tokens);
         
-        self.print_stack();
-        self.print_symbol_table();
-        self.print_memory();
+        //self.print_stack();
+        //self.print_symbol_table();
+        //self.print_memory();
 
         self.execute();
     }
@@ -67,21 +71,24 @@ impl VirtualMachine {
         }
     }
 
-    fn tokenize(&mut self) -> Vec<RawToken> {
-        let mut raw_content = match std::fs::read_to_string(&self.file_path) {
-            Ok(content) => content,
+    fn tokenize(&mut self) -> Vec<Token> {
+        let raw_content = match std::fs::read_to_string(&self.file_path) {
+            Ok(content) => content.replace("\r", ""),
             Err(_) => {panic!("Error reading file");},
         };
-        println!("Raw content as vec: \n{}", raw_content);
+        let mut is_comment = false;
         let mut tokens = Vec::new();
-        let mut raw_token = RawToken::new();
+        let mut raw_token = Token::new();
         let mut is_literal_str = false;
         let mut line_counter = 1;
         let mut col_counter = 1;
         for (i, c) in raw_content.chars().enumerate() {
-            if c == '\r' {
-                continue;
+            match c {
+                '\n' => {is_comment = false;}, // Ambos redefinem is_comment
+                '#' => {is_comment = true;}, // Ambos redefinem is_comment
+                _ => {},
             }
+            if is_comment { continue; }
             
             if is_literal_str {
                 match c {
@@ -122,7 +129,7 @@ impl VirtualMachine {
                             raw_token.clear();
                         }
 
-                        let mut comma_raw_token = RawToken::new();
+                        let mut comma_raw_token = Token::new();
                         comma_raw_token.push(',');
                         comma_raw_token.line = line_counter;
                         comma_raw_token.col = col_counter;
@@ -171,17 +178,18 @@ impl VirtualMachine {
             
         }
         
+        /*
         println!("======== Tokens ========");
         for i in 0..tokens.len() {
             println!("{} --> {:?}",i , tokens[i]);
         }
-         
+        */
         tokens
     }
 
-    fn first_pass(&mut self, raw_tokens_vector: &Vec<RawToken>){
+    fn first_pass(&mut self, raw_tokens_vector: &Vec<Token>){
         // ==== PRIMEIRA PASSAGEM ====
-        let mut section = Section::TEXT;
+        let mut section = Section::Text;
         let mut memory_label_counter = 0;
         let mut token_counter = 0;
         'token_counter_loop: while token_counter < raw_tokens_vector.len() {
@@ -190,11 +198,11 @@ impl VirtualMachine {
             match actual_raw_token_option {
                 Some(actual_raw_token) => {
                     match actual_raw_token.get_token().as_str() {
-                        ".data" => { section = Section::DATA; },
-                        ".text" => { section = Section::TEXT; },
+                        ".data" => { section = Section::Data; },
+                        ".text" => { section = Section::Text; },
                         _ => {
                             match section {
-                                Section::DATA => {
+                                Section::Data => {
                                     /* logica
                                      * pegar o token atual, ver se ele é uma label, se for:
                                      *    pegar o próximo token, ver se ele é .word, .byte, .ascii ou .asciiz
@@ -222,8 +230,8 @@ impl VirtualMachine {
                                                      *      next_next_raw_token = <valor>
                                                      */
 
-                                                    let mut aux_value_counter = token_counter + 2; // <valor>
-                                                    let mut values: Vec<i16> = get_comma_separated_values(&raw_tokens_vector, aux_value_counter);
+                                                    let aux_value_counter = token_counter + 2; // <valor>
+                                                    let values: Vec<i16> = get_comma_separated_values(&raw_tokens_vector, aux_value_counter);
                                                     
 
                                                     if values.len() == 0 {
@@ -276,7 +284,6 @@ impl VirtualMachine {
                                                                          * 
                                                                          *  ou seja, o primeiro byte da string literal é o último a ser colocado na stack (a stack cresce de cima para baixo)
                                                                          */
-                                                                        println!("----> string_literal = {:?}", string_literal_bytes);
                                                                         string_literal_bytes.reverse(); 
                                                                         for b in string_literal_bytes {
                                                                             self.sp -= 1;
@@ -309,7 +316,7 @@ impl VirtualMachine {
                                         panic!("Error: Expected a label on line {}, {}", actual_raw_token.line, actual_raw_token.col);
                                     }
                                 },
-                                Section::TEXT => {
+                                Section::Text => {
                                     /*  logica
                                      *  primeiro, ver se o token atual é uma label, se for:
                                      *      adicionar a label na symbol_table com o valor do ''pc'', 
@@ -375,27 +382,27 @@ impl VirtualMachine {
         }
     }
 
-    fn second_pass(&mut self, raw_tokens: &Vec<RawToken>) {
-        let mut section = Section::TEXT;
+    fn second_pass(&mut self, raw_tokens: &Vec<Token>) {
+        let mut section = Section::Text;
+        #[allow(unused_variables)]
         let mut operation_counter = 0;
         let mut token_counter = 0;
         'token_counter_loop: while token_counter < raw_tokens.len() {
-            println!("----> token {} :: operation_counter = {}, token_counter = {}",raw_tokens[token_counter].get_token(), operation_counter, token_counter);
             let actual_raw_token_option = raw_tokens.get(token_counter).cloned();
             match actual_raw_token_option {
                 Some(actual_raw_token) => {
                     match actual_raw_token.get_token().as_str() {
-                        ".data" => { section = Section::DATA; token_counter += 1; },
-                        ".text" => { section = Section::TEXT; token_counter += 1; },
+                        ".data" => { section = Section::Data; token_counter += 1; },
+                        ".text" => { section = Section::Text; token_counter += 1; },
                         _ => {
                             match section {
-                                Section::DATA => { token_counter += 1; },
-                                Section::TEXT => {
+                                Section::Data => { token_counter += 1; },
+                                Section::Text => {
                                     if actual_raw_token.is_opcode() {
-                                        let mut opcode = actual_raw_token.get_opcode();
+                                        let opcode = actual_raw_token.get_opcode();
                                         if Opcode::is_argumented_opcode(actual_raw_token.get_token().as_str()) {
                                             match opcode {
-                                                Opcode::Jpos | Opcode::Jzer | Opcode::Jump | Opcode::Jneg | Opcode::Jnze | Opcode::Call     | Opcode::Lodd | Opcode::Stod | Opcode::Addd | Opcode::Subd | Opcode::Loco | Opcode::Lodl | Opcode::Stol | Opcode::Addl | Opcode::Subl | Opcode::Insp | Opcode::Desp => {
+                                                Opcode::Jpos | Opcode::Jzer | Opcode::Jump | Opcode::Jneg | Opcode::Jnze | Opcode::Call     | Opcode::Lodd | Opcode::Stod | Opcode::Addd | Opcode::Subd | Opcode::Loco | Opcode::Lodl | Opcode::Stol | Opcode::Addl | Opcode::Subl | Opcode::Insp | Opcode::Desp | Opcode::Printsp | Opcode::Andd | Opcode::Orrd | Opcode::Xord | Opcode::Notd | Opcode::Shfl | Opcode::Shfr => {
                                                     let next_raw_token_option = get_nth_token(&raw_tokens, token_counter + 1);
                                                     match next_raw_token_option {
                                                         Some(next_raw_token) => {
@@ -446,34 +453,6 @@ impl VirtualMachine {
                                                         }
                                                     }
                                                 },
-                                                // não tera lodd, stod, addd, subd, loco, lodl
-                                                /*
-                                                Opcode::Lodd | Opcode::Stod | Opcode::Addd | Opcode::Subd | Opcode::Loco | Opcode::Lodl | Opcode::Stol | Opcode::Addl | Opcode::Subl | Opcode::Insp | Opcode::Desp => {
-                                                    let next_raw_token_option = get_nth_token(&raw_tokens, token_counter + 1);
-                                                    match next_raw_token_option {
-                                                        Some(next_raw_token) => {
-                                                            let value_result = next_raw_token.get_token().parse::<i16>();
-                                                            match value_result {
-                                                                Ok(value) => {
-                                                                    self.memory.push(
-                                                                        Instruction {
-                                                                            opcode: opcode,
-                                                                            arg: value,
-                                                                        }
-                                                                    );
-                                                                    operation_counter += 1;
-                                                                    token_counter += 2;
-                                                                },
-                                                                Err(_) => {
-                                                                    panic!("Error: Expected a valid value after {} on line {}", actual_raw_token.get_token(), actual_raw_token.line);
-                                                                }
-                                                            }
-                                                        },
-                                                        None => {
-                                                            panic!("Error: Expected a value after {} on line {}", actual_raw_token.get_token(), actual_raw_token.line);
-                                                        }
-                                                    }
-                                                },*/
                                                 _ => {
                                                     panic!("Never should reach here");
                                                 }
@@ -523,7 +502,12 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Stod => {
-                            self.set_stack_value(instruction.arg as i64, self.ac);
+                            match self.set_stack_value(instruction.arg as i64, self.ac) {
+                                Ok(_) => {},
+                                Err(_) => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", instruction.arg, instruction.line, instruction.col);
+                                }
+                            }
                             self.pc += 1;
                         },
                         Opcode::Addd => {
@@ -549,14 +533,14 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Jpos => {
-                            if (self.ac > 0) {
+                            if self.ac > 0 {
                                 self.pc = instruction.arg as u32;
                             } else {
                                 self.pc += 1;
                             }
                         },
                         Opcode::Jzer => {
-                            if (self.ac == 0) {
+                            if self.ac == 0 {
                                 self.pc = instruction.arg as u32;
                             } else {
                                 self.pc += 1;
@@ -581,7 +565,12 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Stol => {
-                            self.set_stack_value(self.sp as i64 - instruction.arg as i64, self.ac);
+                            match self.set_stack_value(self.sp as i64 - instruction.arg as i64, self.ac) {
+                                Ok(_) => {},
+                                Err(_) => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            }
                             self.pc += 1;
                         },
                         Opcode::Addl => {
@@ -608,14 +597,14 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Jneg => {
-                            if (self.ac < 0) {
+                            if self.ac < 0 {
                                 self.pc = instruction.arg as u32;
                             } else {
                                 self.pc += 1;
                             }
                         },
                         Opcode::Jnze => {
-                            if (self.ac != 0) {
+                            if self.ac != 0 {
                                 self.pc = instruction.arg as u32;
                             } else {
                                 self.pc += 1;
@@ -623,21 +612,25 @@ impl VirtualMachine {
                         },
                         Opcode::Call => {
                             self.sp -= 1; // oncrementa o sp
-                            self.set_stack_value(self.sp as i64, self.pc as i16 + 1); // guarda o endereço de retorno
+                            match self.set_stack_value(self.sp as i64, self.pc as i16 + 1) {
+                                Ok(_) => {},
+                                Err(_) => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            }
                             self.pc = instruction.arg as u32;
                         },
                         Opcode::Pshi => {
                             self.sp -= 1;
-                            self.set_stack_value(self.sp as i64, self.ac);
+                            match self.set_stack_value(self.sp as i64, self.ac) {
+                                Ok(_) => {},
+                                Err(_) => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            }
                             self.pc += 1;
                         },
                         Opcode::Popi => {
-                            /* 
-                            self.set_stack_value(
-                                self.ac as i64,
-                                self.get_stack_value(self.sp as i64)
-                            );
-                            */
                             let aux = match self.get_stack_value(self.sp as i64) {
                                 Some(value) => value,
                                 None => {
@@ -655,7 +648,12 @@ impl VirtualMachine {
                         },
                         Opcode::Push => {
                             self.sp -= 1; // incrementa o sp
-                            self.set_stack_value(self.sp as i64, self.ac);
+                            match self.set_stack_value(self.sp as i64, self.ac) {
+                                Ok(_) => {},
+                                Err(_) => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            }
                             self.pc += 1;
                         },
                         Opcode::Pop => {
@@ -684,7 +682,12 @@ impl VirtualMachine {
                                     panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
                                 }
                             };
-                            self.set_stack_value(self.sp as i64, self.ac);
+                            match self.set_stack_value(self.sp as i64, self.ac) {
+                                Ok(_) => {},
+                                Err(_) => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            }
                             self.ac = aux;
                             self.pc += 1;
                         },
@@ -700,9 +703,50 @@ impl VirtualMachine {
                             break;
                         },
                         Opcode::Printac => {
-                            println!("AC: {}", self.ac);
+                            println!("{}", self.ac);
                             self.pc += 1;
-                        }
+                        },
+
+                        Opcode::Printsp => {
+                            match self.stack.get(self.sp as usize + instruction.arg as usize) {
+                                Some(value) => {
+                                    println!("{}", value);
+                                },
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            }
+
+                            self.pc += 1;
+                        },
+
+                        Opcode::Andd => {
+                            print!("----> ac: {:2b}, instruction.arg: {:2b}", self.ac, instruction.arg);
+                            self.ac = self.ac & instruction.arg;
+                            println!(" ----> novo ac: {}", self.ac);
+                            self.pc += 1;
+                        },
+                        Opcode::Orrd => {
+                            self.ac = self.ac | instruction.arg;
+                            self.pc += 1;
+                        },
+                        Opcode::Xord => {
+                            self.ac = self.ac ^ instruction.arg;  
+                            self.pc += 1;
+                        },
+                        Opcode::Notd => {
+                            self.ac = !instruction.arg;
+                            self.pc += 1;  
+                        },
+                        Opcode::Shfl => {
+                            self.ac = self.ac << instruction.arg;
+                            self.pc += 1;
+                                
+                        },
+                        Opcode::Shfr => {
+                            self.ac = self.ac >> instruction.arg;
+                            self.pc += 1;
+                        },
                     }
                 },
                 None => {
@@ -730,11 +774,11 @@ impl VirtualMachine {
     }
 }
 
-fn get_nth_token(raw_tokens: &Vec<RawToken>, n: usize) -> Option<RawToken> {
+fn get_nth_token(raw_tokens: &Vec<Token>, n: usize) -> Option<Token> {
     raw_tokens.get(n).cloned()
 }
 
-fn get_comma_separated_values(vector: &Vec<RawToken>, offset: usize) -> Vec<i16> {
+fn get_comma_separated_values(vector: &Vec<Token>, offset: usize) -> Vec<i16> {
     let mut values = Vec::new();
     let mut aux_value_counter = offset;
     'aux_value_counter_loop: while aux_value_counter < vector.len() {

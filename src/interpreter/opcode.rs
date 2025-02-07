@@ -25,6 +25,14 @@ pub enum Opcode {
     Desp, // sem argumentos
     Halt, // sem argumentos
     Printac, // sem argumentos
+
+    Printsp,
+    Andd,
+    Orrd,
+    Xord,
+    Notd,
+    Shfl,
+    Shfr,
 }
 
 impl Opcode {

@@ -9,7 +9,7 @@ fn main() {
             if arg1 == "run" {
                 match args.get(2) {
                     Some(arg2) => {
-                        println!("Running the program {}", arg2);
+                        //println!("Running the program {}", arg2);
                         let mut vm = VirtualMachine::new(arg2);
                         vm.run();
                     },

@@ -1,14 +1,14 @@
 use super::opcode::Opcode;
 
 #[derive(Debug, Clone)] 
-pub struct RawToken {
+pub struct Token {
     token: String,
     pub line: u32,
     pub col: u32,
 }
-impl RawToken {
-    pub fn new() -> RawToken {
-        RawToken {
+impl Token {
+    pub fn new() -> Token {
+        Token {
             token: String::new(),
             line: 1,
             col: 1,
@@ -87,6 +87,15 @@ impl RawToken {
             "DESP",
             "HALT",
             "PRINTAC",
+            "PRINTSP",
+
+            "ANDD",
+            "ORRD",
+            "XORD",
+            "NOTD",
+            "SHFL",
+            "SHFR",
+
         ];
 
         opcodes.contains(&name.as_str())
@@ -120,6 +129,15 @@ impl RawToken {
             "DESP" => Opcode::Desp,
             "HALT" => Opcode::Halt,
             "PRINTAC" => Opcode::Printac,
+
+            "PRINTSP" => Opcode::Printsp,
+            "ANDD" => Opcode::Andd,
+            "ORRD" => Opcode::Orrd,
+            "XORD" => Opcode::Xord,
+            "NOTD" => Opcode::Notd,
+            "SHFL" => Opcode::Shfl,
+            "SHFR" => Opcode::Shfr,
+
             _ => Opcode::Halt,
         }
     }

@@ -44,7 +44,7 @@ impl VirtualMachine {
         self.first_pass(&tokens);
         self.second_pass(&tokens);
         
-        //self.print_stack();
+        self.print_stack();
         //self.print_symbol_table();
         //self.print_memory();
 
@@ -257,7 +257,7 @@ impl VirtualMachine {
                                                     match next_next_raw_token_option {
                                                         Some(next_next_raw_token) => {
                                                             if next_next_raw_token.is_string_literal()  {
-                                                                match next_next_raw_token.get_string_literal() {
+                                                                match next_next_raw_token.to_string_literal() {
                                                                     Some(string_literal) => {
                                                                         
                                                                         self.symbol_table.insert(
@@ -328,13 +328,14 @@ impl VirtualMachine {
                                         let mut next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter + 1);
                                         match next_raw_token_option.as_mut() {
                                             Some(next_raw_token) => {
-                                                if next_raw_token.is_opcode() {
+                                                let next_opcode = Opcode::from_str(next_raw_token.get_token().as_str());
+                                                if next_opcode != Opcode::None {
                                                     self.symbol_table.insert(
                                                         label,
                                                         memory_label_counter,
                                                     );
                                                     
-                                                    if Opcode::is_argumented_opcode(next_raw_token.get_token().as_str()) {
+                                                    if Opcode::is_argumented(next_opcode) {
                                                         token_counter += 2;
                                                     } else {
                                                         token_counter += 1;
@@ -355,8 +356,9 @@ impl VirtualMachine {
                                             }
                                         }
                                     } else {
-                                        if actual_raw_token.is_opcode() {
-                                            if Opcode::is_argumented_opcode(actual_raw_token.get_token().as_str()) {
+                                        let next_opcode = Opcode::from_str(actual_raw_token.get_token().as_str());
+                                        if next_opcode != Opcode::None {
+                                            if Opcode::is_argumented(next_opcode) {
                                                 token_counter += 2;
                                             } else {
                                                 token_counter += 1;
@@ -398,11 +400,13 @@ impl VirtualMachine {
                             match section {
                                 Section::Data => { token_counter += 1; },
                                 Section::Text => {
-                                    if actual_raw_token.is_opcode() {
-                                        let opcode = actual_raw_token.get_opcode();
-                                        if Opcode::is_argumented_opcode(actual_raw_token.get_token().as_str()) {
+                                    if Opcode::from_str(actual_raw_token.get_token().as_str()) != Opcode::None {
+                                        let opcode = Opcode::from_str(actual_raw_token.get_token().as_str());
+                                        if Opcode::is_argumented(opcode) {
                                             match opcode {
-                                                Opcode::Jpos | Opcode::Jzer | Opcode::Jump | Opcode::Jneg | Opcode::Jnze | Opcode::Call     | Opcode::Lodd | Opcode::Stod | Opcode::Addd | Opcode::Subd | Opcode::Loco | Opcode::Lodl | Opcode::Stol | Opcode::Addl | Opcode::Subl | Opcode::Insp | Opcode::Desp | Opcode::Printsp | Opcode::Andd | Opcode::Orrd | Opcode::Xord | Opcode::Notd | Opcode::Shfl | Opcode::Shfr => {
+                                                Opcode::Jpos | Opcode::Jzer | Opcode::Jump | Opcode::Jneg | Opcode::Jnze | Opcode::Call     | Opcode::Lodd | Opcode::Stod | Opcode::Addd | Opcode::Subd | Opcode::Loco | Opcode::Lodl | Opcode::Stol | Opcode::Addl | Opcode::Subl | Opcode::Insp | Opcode::Desp | Opcode::Andi | Opcode::Ori | Opcode::Xori | Opcode::Noti | Opcode::Shfli | Opcode::Shfri |
+                                                Opcode::Printlnspi | Opcode::Printlnspd | Opcode::Printspi | Opcode::Printspd | Opcode::Printlnspchari | Opcode::Printlnspchard | Opcode::Printspchari | Opcode::Printspchard
+                                                => {
                                                     let next_raw_token_option = get_nth_token(&raw_tokens, token_counter + 1);
                                                     match next_raw_token_option {
                                                         Some(next_raw_token) => {
@@ -490,6 +494,9 @@ impl VirtualMachine {
             match instruction_option {
                 Some(instruction) => {
                     match instruction.opcode {
+                        Opcode::None => {
+                            self.pc += 1;
+                        },
                         Opcode::Lodd => {
                             match self.stack.get(instruction.arg as usize) {
                                 Some(value) => {
@@ -513,15 +520,18 @@ impl VirtualMachine {
                         Opcode::Addd => {
                             match self.stack.get(instruction.arg as usize) {
                                 Some(value) => {
-                                    self.ac += *value;
+                                    self.ac = self.ac
+                                                    .checked_add(*value)
+                                                    .expect(
+                                                        format!("Error: Overflow on line {}, col {}", instruction.line, instruction.col).as_str()
+                                                    );
                                 },
                                 None => {
                                     panic!("Error: Address {} out of stack bounds, line {}, col {}", instruction.arg, instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;
-                        },
-                        Opcode::Subd => {
+                        },    Opcode::Subd => {
                             match self.stack.get(instruction.arg as usize) {
                                 Some(value) => {
                                     self.ac -= *value;
@@ -699,15 +709,25 @@ impl VirtualMachine {
                             self.sp -= instruction.arg as u32;
                             self.pc += 1;
                         },
+                        
+                        /* 
+                         * APARTIR DAQUI, SÃO OPERAÇÕES QUE EU CRIEI
+                         */
                         Opcode::Halt => {
                             break;
                         },
-                        Opcode::Printac => {
+
+
+                        Opcode::Printlnac => {
                             println!("{}", self.ac);
                             self.pc += 1;
                         },
+                        Opcode::Printac => {
+                            print!("{}", self.ac);
+                            self.pc += 1;
+                        }
 
-                        Opcode::Printsp => {
+                        Opcode::Printlnspi => {
                             match self.stack.get(self.sp as usize + instruction.arg as usize) {
                                 Some(value) => {
                                     println!("{}", value);
@@ -719,31 +739,127 @@ impl VirtualMachine {
 
                             self.pc += 1;
                         },
+                        Opcode::Printlnspd => {
+                            match self.stack.get(self.sp as usize - instruction.arg as usize) {
+                                Some(value) => {
+                                    println!("{}", value);
+                                },
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            }
 
-                        Opcode::Andd => {
+                            self.pc += 1;
+                        },
+                        Opcode::Printspi => {
+                            match self.stack.get(self.sp as usize + instruction.arg as usize) {
+                                Some(value) => {
+                                    print!("{}", value);
+                                },
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            }
+
+                            self.pc += 1;
+                        }
+                        Opcode::Printspd => {
+                            match self.stack.get(self.sp as usize - instruction.arg as usize) {
+                                Some(value) => {
+                                    print!("{}", value);
+                                },
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            }
+
+                            self.pc += 1;
+                        },
+
+                        Opcode::Printlnacchar => {
+                            println!("{}", self.ac as u8 as char);
+                            self.pc += 1;
+                        }
+                        Opcode::Printacchar => {
+                            print!("{}", self.ac as u8 as char);
+                            self.pc += 1;
+                        }
+
+                        Opcode::Printlnspchari => {
+                            match self.stack.get(self.sp as usize + instruction.arg as usize) {
+                                Some(value) => {
+                                    println!("{}", *value as u8 as char);
+                                },
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            }
+
+                            self.pc += 1;
+                        }
+
+                        Opcode::Printlnspchard => {
+                            match self.stack.get(self.sp as usize - instruction.arg as usize) {
+                                Some(value) => {
+                                    println!("{}", *value as u8 as char);
+                                },
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            }
+
+                            self.pc += 1;
+                        }
+                        Opcode::Printspchari => {
+                            match self.stack.get(self.sp as usize + instruction.arg as usize) {
+                                Some(value) => {
+                                    print!("{}", *value as u8 as char);
+                                },
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            }
+
+                            self.pc += 1;
+                        }
+                        Opcode::Printspchard => {
+                            match self.stack.get(self.sp as usize - instruction.arg as usize) {
+                                Some(value) => {
+                                    print!("{}", *value as u8 as char);
+                                },
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            }
+
+                            self.pc += 1;
+                        }
+
+
+                        Opcode::Andi => {
                             print!("----> ac: {:2b}, instruction.arg: {:2b}", self.ac, instruction.arg);
                             self.ac = self.ac & instruction.arg;
                             println!(" ----> novo ac: {}", self.ac);
                             self.pc += 1;
                         },
-                        Opcode::Orrd => {
+                        Opcode::Ori => {
                             self.ac = self.ac | instruction.arg;
                             self.pc += 1;
                         },
-                        Opcode::Xord => {
+                        Opcode::Xori => {
                             self.ac = self.ac ^ instruction.arg;  
                             self.pc += 1;
                         },
-                        Opcode::Notd => {
+                        Opcode::Noti => {
                             self.ac = !instruction.arg;
                             self.pc += 1;  
                         },
-                        Opcode::Shfl => {
+                        Opcode::Shfli => {
                             self.ac = self.ac << instruction.arg;
                             self.pc += 1;
                                 
                         },
-                        Opcode::Shfr => {
+                        Opcode::Shfri => {
                             self.ac = self.ac >> instruction.arg;
                             self.pc += 1;
                         },

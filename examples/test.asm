@@ -1,0 +1,10 @@
+.data
+string: .ascii "oooii\n"
+.text
+    PRINTSPCHARI 0
+    PRINTSPCHARI 1
+    PRINTSPCHARI 2
+    PRINTSPCHARI 5
+    PRINTSPCHARI 3
+    PRINTSPCHARI 4
+    

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-cargo run run examples/01.asm
+cargo run run examples/test.asm

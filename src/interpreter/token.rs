@@ -1,4 +1,4 @@
-use super::opcode::Opcode;
+use core::panic;
 
 #[derive(Debug, Clone)] 
 pub struct Token {
@@ -43,7 +43,8 @@ impl Token {
         self.token.chars().nth(self.token.len()-1) == Some(':')
     }
 
-    pub fn get_string_literal(&self) -> Option<String> {
+    /*
+    pub fn to_string_literal(&self) -> Option<String> {
         let string_to_process = self.get_token();
         let mut processed_string = String::new();
         if string_to_process.len() >= 2 && string_to_process.chars().nth(0) == Some('"') && string_to_process.chars().nth(string_to_process.len()-1) == Some('"') {
@@ -57,93 +58,56 @@ impl Token {
         Some(processed_string)
 
     }
+    */
 
-    pub fn is_opcode(&self) -> bool {
-        let name = self.get_token();
-        
-        let opcodes = vec![
-            "LODD",
-            "STOD",
-            "ADDD",
-            "SUBD",
-            "JPOS",
-            "JZER",
-            "JUMP",
-            "LOCO",
-            "LODL",
-            "STOL",
-            "ADDL",
-            "SUBL",
-            "JNEG",
-            "JNZE",
-            "CALL",
-            "PSHI",
-            "POPI",
-            "PUSH",
-            "POP",
-            "RETN",
-            "SWAP",
-            "INSP",
-            "DESP",
-            "HALT",
-            "PRINTAC",
-            "PRINTSP",
-
-            "ANDD",
-            "ORRD",
-            "XORD",
-            "NOTD",
-            "SHFL",
-            "SHFR",
-
-        ];
-
-        opcodes.contains(&name.as_str())
-    }
-
-    pub fn get_opcode(&self) -> Opcode {
-        let name = self.get_token();
-        match name.as_str() {
-            "LODD" => Opcode::Lodd,
-            "STOD" => Opcode::Stod,
-            "ADDD" => Opcode::Addd,
-            "SUBD" => Opcode::Subd,
-            "JPOS" => Opcode::Jpos,
-            "JZER" => Opcode::Jzer,
-            "JUMP" => Opcode::Jump,
-            "LOCO" => Opcode::Loco,
-            "LODL" => Opcode::Lodl,
-            "STOL" => Opcode::Stol,
-            "ADDL" => Opcode::Addl,
-            "SUBL" => Opcode::Subl,
-            "JNEG" => Opcode::Jneg,
-            "JNZE" => Opcode::Jnze,
-            "CALL" => Opcode::Call,
-            "PSHI" => Opcode::Pshi,
-            "POPI" => Opcode::Popi,
-            "PUSH" => Opcode::Push,
-            "POP" => Opcode::Pop,
-            "RETN" => Opcode::Retn,
-            "SWAP" => Opcode::Swap,
-            "INSP" => Opcode::Insp,
-            "DESP" => Opcode::Desp,
-            "HALT" => Opcode::Halt,
-            "PRINTAC" => Opcode::Printac,
-
-            "PRINTSP" => Opcode::Printsp,
-            "ANDD" => Opcode::Andd,
-            "ORRD" => Opcode::Orrd,
-            "XORD" => Opcode::Xord,
-            "NOTD" => Opcode::Notd,
-            "SHFL" => Opcode::Shfl,
-            "SHFR" => Opcode::Shfr,
-
-            _ => Opcode::Halt,
+    pub fn to_string_literal(&self) -> Option<String> {
+        let string_to_process = self.get_token(); // e.g.: <"Hello, World!\n"> ou <"Hello, World!"> ou <"\n\t\0"> ou <"\""> ou <"\\">
+        let mut processed_string = String::new();
+        let mut str_counter = 0;
+        if string_to_process.len() >= 2 && string_to_process.chars().nth(0) == Some('"') && string_to_process.chars().nth(string_to_process.len()-1) == Some('"') {
+            for i in 1..string_to_process.len()-2 {
+                if string_to_process.chars().nth(i) == Some('\\') {
+                    match string_to_process.chars().nth(i+1) {
+                        Some('n') => {
+                            processed_string.push('\n');
+                            str_counter += 2;
+                        },
+                        Some('t') => {
+                            processed_string.push('\t');
+                            str_counter += 2;
+                        },
+                        Some('r') => {
+                            processed_string.push('\r');
+                            str_counter += 2;
+                        },
+                        Some('0') => {
+                            processed_string.push('\0');
+                            str_counter += 2;
+                        },
+                        Some('\'') => {
+                            processed_string.push('\'');
+                            str_counter += 2;
+                        },
+                        Some('"') => {
+                            processed_string.push('"');
+                            str_counter += 2;
+                        },
+                        Some('\\') => {
+                            processed_string.push('\\');
+                            str_counter += 2;
+                        },
+                        _ => {
+                            panic!("Invalid escape sequence at line {} and column {}", self.line, self.col + str_counter);
+                        }
+                    }
+                } else {
+                    processed_string.push(string_to_process.chars().nth(i).unwrap());
+                }
+            }
+        } else {
+            return None;
         }
-    }
 
-    pub fn is_number(&self) -> bool {
-        let token = self.get_token();
-        token.chars().all(|c| c.is_digit(10))
+        Some(processed_string)
     }
 }

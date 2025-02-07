@@ -1,5 +1,3 @@
-use core::panic;
-
 use crate::interpreter::logkit;
 
 #[derive(Debug, Clone)] 
@@ -45,71 +43,60 @@ impl Token {
         self.token.chars().nth(self.token.len()-1) == Some(':')
     }
 
-    /*
-    pub fn to_string_literal(&self) -> Option<String> {
-        let string_to_process = self.get_token();
-        let mut processed_string = String::new();
-        if string_to_process.len() >= 2 && string_to_process.chars().nth(0) == Some('"') && string_to_process.chars().nth(string_to_process.len()-1) == Some('"') {
-            for i in 1..string_to_process.len()-1 {
-                processed_string.push(string_to_process.chars().nth(i).unwrap());
-            }
-        } else {
-            return None;
-        }
-
-        Some(processed_string)
-
-    }
-    */
-
     pub fn to_string_literal(&self) -> Option<String> {
         let string_to_process = self.get_token(); // e.g.: <"Hello, World!\n"> ou <"Hello, World!"> ou <"\n\t\0"> ou <"\""> ou <"\\">
         let mut processed_string = String::new();
-        let mut str_counter = 0;
-        if string_to_process.len() >= 2 && string_to_process.chars().nth(0) == Some('"') && string_to_process.chars().nth(string_to_process.len()-1) == Some('"') {
-            for i in 1..string_to_process.len()-1 {
-                if string_to_process.chars().nth(i) == Some('\\') {
-                    match string_to_process.chars().nth(i+1) {
+        
+    
+        // Verifica se a string está corretamente entre aspas
+        if string_to_process.len() >= 2 && string_to_process.chars().nth(0) == Some('"') && string_to_process.chars().nth(string_to_process.len() - 1) == Some('"') {
+            let mut str_counter = 1;
+            while str_counter < string_to_process.len() - 1 {
+                if string_to_process.chars().nth(str_counter) == Some('\\') {
+                    match string_to_process.chars().nth(str_counter + 1) {
+                        Some('\\') => {
+                            // Adiciona uma barra invertida literal
+                            processed_string.push('\\');
+                            str_counter += 2; // Pula a próxima barra invertida
+                        }
                         Some('n') => {
                             processed_string.push('\n');
                             str_counter += 2;
-                        },
+                        }
                         Some('t') => {
                             processed_string.push('\t');
                             str_counter += 2;
-                        },
+                        }
                         Some('r') => {
                             processed_string.push('\r');
                             str_counter += 2;
-                        },
+                        }
                         Some('0') => {
                             processed_string.push('\0');
                             str_counter += 2;
-                        },
+                        }
                         Some('\'') => {
                             processed_string.push('\'');
                             str_counter += 2;
-                        },
+                        }
                         Some('"') => {
                             processed_string.push('"');
                             str_counter += 2;
-                        },
-                        Some('\\') => {
-                            processed_string.push('\\');
-                            str_counter += 2;
-                        },
+                        }
                         _ => {
-                            logkit::exit_with_positional_error_message("Invalid escape sequence", self.line, self.col + str_counter);
-                        },
+                            logkit::exit_with_positional_error_message("Invalid escape sequence", self.line, self.col + str_counter as u32);
+                        }
                     }
                 } else {
-                    processed_string.push(string_to_process.chars().nth(i).unwrap());
+                    processed_string.push(string_to_process.chars().nth(str_counter).unwrap());
                     str_counter += 1;
                 }
             }
         } else {
-            return None;
+            return None; 
         }
+    
+        println!("----> <{}> :: <{}>", string_to_process, processed_string); // e.g.: <"\\"> :: <\> ou <"\""> :: <">
         Some(processed_string)
     }
 }

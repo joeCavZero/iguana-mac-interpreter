@@ -11,7 +11,7 @@ enum Section {
 }
 pub struct VirtualMachine {
     file_path: String,
-    ac: i8, // Accumulator
+    ac: i16, // Accumulator
     pc: u32, // Program Counter
     
     sp: u32, // Stack Pointer
@@ -43,6 +43,8 @@ impl VirtualMachine {
         self.print_stack();
         self.print_symbol_table();
         self.print_memory();
+
+        self.execute();
     }
     fn print_stack(&self) {
         println!("======== Stack ========");
@@ -387,26 +389,27 @@ impl VirtualMachine {
                         ".text" => { section = Section::TEXT; token_counter += 1; },
                         _ => {
                             match section {
-                                Section::DATA => {},
+                                Section::DATA => { token_counter += 1; },
                                 Section::TEXT => {
                                     if actual_raw_token.is_opcode() {
                                         let mut opcode = actual_raw_token.get_opcode();
                                         if Opcode::is_argumented_opcode(actual_raw_token.get_token().as_str()) {
                                             match opcode {
-                                                Opcode::Jpos | Opcode::Jzer | Opcode::Jump | Opcode::Jneg | Opcode::Jnze | Opcode::Call => {
+                                                Opcode::Jpos | Opcode::Jzer | Opcode::Jump | Opcode::Jneg | Opcode::Jnze | Opcode::Call     | Opcode::Lodd | Opcode::Stod | Opcode::Addd | Opcode::Subd | Opcode::Loco | Opcode::Lodl | Opcode::Stol | Opcode::Addl | Opcode::Subl | Opcode::Insp | Opcode::Desp => {
                                                     let next_raw_token_option = get_nth_token(&raw_tokens, token_counter + 1);
                                                     match next_raw_token_option {
                                                         Some(next_raw_token) => {
-                                                            if next_raw_token.is_label() {
+                                                            if self.symbol_table.contains_key(&next_raw_token.get_token()) {
                                                                 let label = next_raw_token.get_token();
                                                                 let label_address_option = self.symbol_table.get(&label);
                                                                 match label_address_option {
                                                                     Some(label_address) => {
-                                                                        //let address_offset = operation_counter - *label_address;
                                                                         self.memory.push(
                                                                             Instruction {
                                                                                 opcode: opcode,
                                                                                 arg: *label_address as i16,
+                                                                                line: actual_raw_token.line,
+                                                                                col: actual_raw_token.col,
                                                                             }
                                                                         );
 
@@ -425,6 +428,8 @@ impl VirtualMachine {
                                                                             Instruction {
                                                                                 opcode: opcode,
                                                                                 arg: value,
+                                                                                line: actual_raw_token.line,
+                                                                                col: actual_raw_token.col,
                                                                             }
                                                                         );
                                                                         operation_counter += 1;
@@ -441,6 +446,8 @@ impl VirtualMachine {
                                                         }
                                                     }
                                                 },
+                                                // não tera lodd, stod, addd, subd, loco, lodl
+                                                /*
                                                 Opcode::Lodd | Opcode::Stod | Opcode::Addd | Opcode::Subd | Opcode::Loco | Opcode::Lodl | Opcode::Stol | Opcode::Addl | Opcode::Subl | Opcode::Insp | Opcode::Desp => {
                                                     let next_raw_token_option = get_nth_token(&raw_tokens, token_counter + 1);
                                                     match next_raw_token_option {
@@ -466,7 +473,7 @@ impl VirtualMachine {
                                                             panic!("Error: Expected a value after {} on line {}", actual_raw_token.get_token(), actual_raw_token.line);
                                                         }
                                                     }
-                                                },
+                                                },*/
                                                 _ => {
                                                     panic!("Never should reach here");
                                                 }
@@ -476,6 +483,8 @@ impl VirtualMachine {
                                                 Instruction {
                                                     opcode: opcode,
                                                     arg: 0,
+                                                    line: actual_raw_token.line,
+                                                    col: actual_raw_token.col,
                                                 }
                                             );
                                             operation_counter += 1;
@@ -492,6 +501,230 @@ impl VirtualMachine {
                     }
                 },
                 None => { break 'token_counter_loop; }
+            }
+        }
+    }
+
+    fn execute(&mut self) {
+        loop {
+            let instruction_option = self.memory.get(self.pc as usize).cloned();
+            match instruction_option {
+                Some(instruction) => {
+                    match instruction.opcode {
+                        Opcode::Lodd => {
+                            match self.stack.get(instruction.arg as usize) {
+                                Some(value) => {
+                                    self.ac = *value;
+                                },
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", instruction.arg, instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+                        Opcode::Stod => {
+                            self.set_stack_value(instruction.arg as i64, self.ac);
+                            self.pc += 1;
+                        },
+                        Opcode::Addd => {
+                            match self.stack.get(instruction.arg as usize) {
+                                Some(value) => {
+                                    self.ac += *value;
+                                },
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", instruction.arg, instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+                        Opcode::Subd => {
+                            match self.stack.get(instruction.arg as usize) {
+                                Some(value) => {
+                                    self.ac -= *value;
+                                },
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", instruction.arg, instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+                        Opcode::Jpos => {
+                            if (self.ac > 0) {
+                                self.pc = instruction.arg as u32;
+                            } else {
+                                self.pc += 1;
+                            }
+                        },
+                        Opcode::Jzer => {
+                            if (self.ac == 0) {
+                                self.pc = instruction.arg as u32;
+                            } else {
+                                self.pc += 1;
+                            }
+                        },
+                        Opcode::Jump => {
+                            self.pc = instruction.arg as u32;
+                        },
+                        Opcode::Loco => {
+                            self.ac = instruction.arg;
+                            self.pc += 1;
+                        },
+                        Opcode::Lodl => {
+                            match self.stack.get((self.sp as i64 - instruction.arg as i64) as usize) {
+                                Some(value) => {
+                                    self.ac = *value;
+                                },
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", instruction.arg, instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+                        Opcode::Stol => {
+                            self.set_stack_value(self.sp as i64 - instruction.arg as i64, self.ac);
+                            self.pc += 1;
+                        },
+                        Opcode::Addl => {
+                            match self.stack.get((self.sp as i64 - instruction.arg as i64) as usize) {
+                                Some(value) => {
+                                    self.ac += *value;
+                                },
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", instruction.arg, instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+                        Opcode::Subl => {
+                            match self.stack.get((self.sp as i64 - instruction.arg as i64) as usize) {
+                                Some(value) => {
+                                    self.ac -= *value;
+                                },
+                                None => {
+                                    println!("A stack[2047] = {}", self.stack[2047]);
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", instruction.arg, instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+                        Opcode::Jneg => {
+                            if (self.ac < 0) {
+                                self.pc = instruction.arg as u32;
+                            } else {
+                                self.pc += 1;
+                            }
+                        },
+                        Opcode::Jnze => {
+                            if (self.ac != 0) {
+                                self.pc = instruction.arg as u32;
+                            } else {
+                                self.pc += 1;
+                            }
+                        },
+                        Opcode::Call => {
+                            self.sp -= 1; // oncrementa o sp
+                            self.set_stack_value(self.sp as i64, self.pc as i16 + 1); // guarda o endereço de retorno
+                            self.pc = instruction.arg as u32;
+                        },
+                        Opcode::Pshi => {
+                            self.sp -= 1;
+                            self.set_stack_value(self.sp as i64, self.ac);
+                            self.pc += 1;
+                        },
+                        Opcode::Popi => {
+                            /* 
+                            self.set_stack_value(
+                                self.ac as i64,
+                                self.get_stack_value(self.sp as i64)
+                            );
+                            */
+                            let aux = match self.get_stack_value(self.sp as i64) {
+                                Some(value) => value,
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds", self.sp);
+                                }
+                            };
+                            match self.set_stack_value(self.ac as i64, aux) {
+                                Ok(_) => {},
+                                Err(_) => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.ac, instruction.line, instruction.col);
+                                }
+                            }
+                            self.sp += 1; // decrementa o sp
+                            self.pc += 1;
+                        },
+                        Opcode::Push => {
+                            self.sp -= 1; // incrementa o sp
+                            self.set_stack_value(self.sp as i64, self.ac);
+                            self.pc += 1;
+                        },
+                        Opcode::Pop => {
+                            self.ac = match self.stack.get(self.sp as usize) {
+                                Some(value) => *value,
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            };
+                            self.sp += 1; // decrementa o sp
+                            self.pc += 1;
+                        },
+                        Opcode::Retn => {
+                            self.pc = match self.stack.get(self.sp as usize) {
+                                Some(value) => *value as u32,
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            };
+                            self.sp += 1; // decrementa o sp
+                        },
+                        Opcode::Swap => {
+                            let aux = match self.stack.get(self.sp as usize) {
+                                Some(value) => *value,
+                                None => {
+                                    panic!("Error: Address {} out of stack bounds, line {}, col {}", self.sp, instruction.line, instruction.col);
+                                }
+                            };
+                            self.set_stack_value(self.sp as i64, self.ac);
+                            self.ac = aux;
+                            self.pc += 1;
+                        },
+                        Opcode::Insp => {
+                            self.sp += instruction.arg as u32;
+                            self.pc += 1;
+                        },
+                        Opcode::Desp => {
+                            self.sp -= instruction.arg as u32;
+                            self.pc += 1;
+                        },
+                        Opcode::Halt => {
+                            break;
+                        },
+                        Opcode::Printac => {
+                            println!("AC: {}", self.ac);
+                            self.pc += 1;
+                        }
+                    }
+                },
+                None => {
+                    break;
+                }
+            }
+        }
+    }
+
+    fn get_stack_value(&self, address: i64) -> Option<i16> {
+        self.stack.get(address as usize).cloned()
+    }
+
+    fn set_stack_value(&mut self, address: i64, new_value: i16) -> Result<(), ()> {
+        let value_option = self.stack.get_mut(address as usize);
+        match value_option {
+            Some(value) => {
+                *value = new_value;
+                Ok(())
+            },
+            None => {
+                Err(())
             }
         }
     }

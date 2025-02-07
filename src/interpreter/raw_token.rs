@@ -123,4 +123,9 @@ impl RawToken {
             _ => Opcode::Halt,
         }
     }
+
+    pub fn is_number(&self) -> bool {
+        let token = self.get_token();
+        token.chars().all(|c| c.is_digit(10))
+    }
 }

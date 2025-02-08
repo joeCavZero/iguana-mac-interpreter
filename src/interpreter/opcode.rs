@@ -42,6 +42,20 @@ pub enum Opcode {
     Noti,
     Shfli,
     Shfri,
+
+    Andd,
+    Ord,
+    Xord,
+    Notd,
+    Shfld,
+    Shfrd,
+
+    Muld,
+    Divd,
+
+    Sleepd,
+    Sleepi,
+
 }
 
 
@@ -99,13 +113,25 @@ impl Opcode {
             "PRINTLNACCHAR" => Opcode::Printlnacchar, "PRINTACCHAR" => Opcode::Printacchar,
             "PRINTLNSPCHARI" => Opcode::Printlnspchari, "PRINTLNSPCHARD" => Opcode::Printlnspchard, "PRINTSPCHARI" => Opcode::Printspchari, "PRINTSPCHARD" => Opcode::Printspchard,
 
-
-            "ANDI" => Opcode::Andi,
+            "ANDI" => Opcode::Andi, 
             "ORI" => Opcode::Ori,
             "XORI" => Opcode::Xori,
             "NOTI" => Opcode::Noti,
             "SHFLI" => Opcode::Shfli,
             "SHFRI" => Opcode::Shfri,
+
+            "ANDD" => Opcode::Andd,
+            "ORD" => Opcode::Ord,
+            "XORD" => Opcode::Xord,
+            "NOTD" => Opcode::Notd,
+            "SHFLD" => Opcode::Shfld,
+            "SHFRD" => Opcode::Shfrd,
+
+            "MULD" => Opcode::Muld,
+            "DIVD" => Opcode::Divd,
+
+            "SLEEPD" => Opcode::Sleepd,
+            "SLEEPI" => Opcode::Sleepi,
 
             _ => Opcode::None,
         }

@@ -1,7 +1,7 @@
 #programa de achar o BIGGER valor entre VAL1 e VAL2
 .data
-VAL1: .word 256
-VAL2: .word 10
+VAL1: .word 10
+VAL2: .word 257
 BIGGER: .word 0
 
 .text
@@ -11,7 +11,7 @@ BIGGER: .word 0
 
     LODD VAL2 
     STOD BIGGER
-    JUMP IMPRIMIR
+    JUMP PRINT_AND_END
 
 LABEL1:
     LODD VAL1  

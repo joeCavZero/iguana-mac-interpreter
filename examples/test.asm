@@ -1,8 +1,11 @@
 .data
-    UM: .word 1
+    TWO: .word 2
+    AUX: .word 0
 .text
-    LOCO 10
+    LOCO 2
 LOOP:
-    SUBD UM
+    MULD TWO
+    STOD AUX
     PRINTLNAC
+    SLEEPD TWO
     JUMP LOOP

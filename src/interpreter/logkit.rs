@@ -16,9 +16,10 @@ pub fn exit_with_positional_error_message(message: &str, line: u32, col: u32) {
 
 pub fn exit_with_error_message(message: &str) {
     println!(
-        "{} {}",
+        "{} {} {}",
         format!("[{}]", INTERPRETER_NAME).bold().yellow(),
-        format!("[ERROR] {}", message).bold().red(),
+        "[ERROR]".bold().red(),
+        message,
     );
     std::process::exit(0);
 }

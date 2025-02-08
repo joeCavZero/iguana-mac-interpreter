@@ -421,12 +421,9 @@ impl VirtualMachine {
                                     if Opcode::from_str(actual_raw_token.get_token().as_str()) != Opcode::None {
                                         let opcode = Opcode::from_str(actual_raw_token.get_token().as_str());
                                         if Opcode::is_argumented(opcode) {
-                                            match opcode {
-                                                Opcode::Jpos | Opcode::Jzer | Opcode::Jump | Opcode::Jneg | Opcode::Jnze | Opcode::Call     | Opcode::Lodd | Opcode::Stod | Opcode::Addd | Opcode::Subd | Opcode::Loco | Opcode::Lodl | Opcode::Stol | Opcode::Addl | Opcode::Subl | Opcode::Insp | Opcode::Desp | Opcode::Andi | Opcode::Ori | Opcode::Xori | Opcode::Noti | Opcode::Shfli | Opcode::Shfri |
-                                                Opcode::Printlnspi | Opcode::Printlnspd | Opcode::Printspi | Opcode::Printspd | Opcode::Printlnspchari | Opcode::Printlnspchard | Opcode::Printspchari | Opcode::Printspchard
-                                                => {
-                                                    let next_raw_token_option = get_nth_token(&raw_tokens, token_counter + 1);
-                                                    match next_raw_token_option {
+                                            
+                                            let next_raw_token_option = get_nth_token(&raw_tokens, token_counter + 1);
+                                            match next_raw_token_option {
                                                         Some(next_raw_token) => {
                                                             if self.symbol_table.contains_key(&next_raw_token.get_token()) {
                                                                 let label = next_raw_token.get_token();
@@ -474,11 +471,7 @@ impl VirtualMachine {
                                                             logkit::exit_with_positional_error_message("Expected a label or a value after call", actual_raw_token.line, actual_raw_token.col);
                                                         }
                                                     }
-                                                },
-                                                _ => {
-                                                    logkit::exit_with_error_message( "Never should reach here" );
-                                                }
-                                            }
+                                                
                                         } else { // caso não seja uma instrução com argumentos
                                             self.memory.push(
                                                 Instruction {
@@ -616,7 +609,15 @@ impl VirtualMachine {
                         Opcode::Addl => {
                             match self.stack.get((self.sp as i64 - instruction.arg as i64) as usize) {
                                 Some(value) => {
-                                    self.ac += *value;
+                                    let aux_option = self.ac.checked_add(*value);
+                                    match aux_option {
+                                        Some(aux) => {
+                                            self.ac = aux;
+                                        },
+                                        None => {
+                                            logkit::exit_with_positional_error_message("Value range exceeded (+32767)", instruction.line, instruction.col);
+                                        }
+                                    }
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
@@ -627,7 +628,15 @@ impl VirtualMachine {
                         Opcode::Subl => {
                             match self.stack.get((self.sp as i64 - instruction.arg as i64) as usize) {
                                 Some(value) => {
-                                    self.ac -= *value;
+                                    let aux_option = self.ac.checked_sub(*value);
+                                    match aux_option {
+                                        Some(aux) => {
+                                            self.ac = aux;
+                                        },
+                                        None => {
+                                            logkit::exit_with_positional_error_message("Value range exceeded (-32768)", instruction.line, instruction.col);
+                                        }
+                                    }
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
@@ -650,7 +659,7 @@ impl VirtualMachine {
                             }
                         },
                         Opcode::Call => {
-                            self.sp -= 1; // oncrementa o sp
+                            self.sp -= 1; // incrementa o sp
                             match self.set_stack_value(self.sp as i64, self.pc as i16 + 1) {
                                 Ok(_) => {},
                                 Err(_) => {
@@ -896,6 +905,123 @@ impl VirtualMachine {
                             self.ac = self.ac >> instruction.arg;
                             self.pc += 1;
                         },
+                        
+                        Opcode::Andd => {
+                            match self.stack.get(instruction.arg as usize) {
+                                Some(value) => {
+                                    self.ac = self.ac & *value;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+                        Opcode::Ord => {
+                            match self.stack.get(instruction.arg as usize) {
+                                Some(value) => {
+                                    self.ac = self.ac | *value;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+                        Opcode::Xord => {
+                            match self.stack.get(instruction.arg as usize) {
+                                Some(value) => {
+                                    self.ac = self.ac ^ *value;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+                        Opcode::Notd => {
+                            match self.stack.get(instruction.arg as usize) {
+                                Some(value) => {
+                                    self.ac = !*value;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+                        Opcode::Shfrd => {
+                            match self.stack.get(instruction.arg as usize) {
+                                Some(value) => {
+                                    self.ac = self.ac >> *value;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+                        Opcode::Shfld => {
+                            match self.stack.get(instruction.arg as usize) {
+                                Some(value) => {
+                                    self.ac = self.ac << *value;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+
+                        Opcode::Muld => {
+                            match self.stack.get(instruction.arg as usize) {
+                                Some(value) => {
+                                    let aux_option = self.ac.checked_mul(*value);
+                                    match aux_option {
+                                        Some(aux) => {
+                                            self.ac = aux;
+                                        },
+                                        None => {
+                                            logkit::exit_with_positional_error_message("Value range exceeded (+32767)", instruction.line, instruction.col);
+                                        }
+                                    }
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+
+                        Opcode::Divd => {
+                            match self.stack.get(instruction.arg as usize) {
+                                Some(value) => {
+                                    if *value == 0 {
+                                        logkit::exit_with_positional_error_message("Division by zero", instruction.line, instruction.col);
+                                    }
+                                    self.ac = self.ac / *value;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+                        Opcode::Sleepd => {
+                            match self.stack.get(instruction.arg as usize) {
+                                Some(value) => {
+                                    std::thread::sleep(std::time::Duration::from_secs(*value as u64));
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+                        Opcode::Sleepi => {
+                            std::thread::sleep(std::time::Duration::from_secs(instruction.arg as u64));
+                            self.pc += 1;
+                        }
                     }
                 },
                 None => {

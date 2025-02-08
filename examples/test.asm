@@ -4,7 +4,7 @@
 .text
     LOCO 2
 LOOP:
-    MULD TW
+    MULD TWO
     STOD AUX
     PRINTLNAC
     SLEEPD TWO

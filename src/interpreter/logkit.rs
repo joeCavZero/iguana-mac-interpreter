@@ -1,14 +1,14 @@
 use colored::Colorize;
 use supports_color::Stream;
 
-const INTERPRETER_NAME : &str = "Interpreter";
+const INTERPRETER_NAME : &str = "IGUANA";
 
 
 fn interpreter_name_piece() -> String {
     let name_piece = format!("[{}]", INTERPRETER_NAME);
     if let Some(color_level) = supports_color::on(Stream::Stdout) {
         if color_level.has_16m {
-            name_piece.bold().yellow().to_string()
+            name_piece.bold().green().to_string()
         } else {
             name_piece
         }
@@ -43,6 +43,16 @@ fn line_col_piece(line: u32, col: u32) -> String {
     }
 }
 
+
+pub fn message(message: &str) {
+    println!(
+        "{} {}",
+        interpreter_name_piece(),
+        message
+    );
+}
+
+
 pub fn exit_with_positional_error_message(message: &str, line: u32, col: u32) {  
     println!(
         "{} {} {} {}",
@@ -63,5 +73,14 @@ pub fn exit_with_error_message(message: &str) {
         error_piece(),
         message
     ); 
+    std::process::exit(0);
+}
+
+pub fn message_compatible_expected_program_argument(failed_argument: &str) {
+    println!(
+        "{} {}",
+        interpreter_name_piece(),
+        format!("Invalid argument: {} , expected 'run' or 'info'", failed_argument).as_str()
+    );
     std::process::exit(0);
 }

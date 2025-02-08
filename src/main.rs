@@ -1,5 +1,4 @@
-use proj04::interpreter::virtual_machine::VirtualMachine;
-
+use iguana::interpreter::{logkit, virtual_machine::VirtualMachine};
 
 fn main() {
     let args = std::env::args().collect::<Vec<String>>();
@@ -13,15 +12,19 @@ fn main() {
                         vm.run();
                     },
                     None => {
-                        println!("No file provided");
+                        logkit::message("No file provided");
                     }
                 }
+            } else if arg1 == "info" {
+                logkit::message("Iguana MAC Interpreter");
+                logkit::message("Version: 0.1.0");
+                logkit::message("Developed by: github.com/joeCavZero");
             } else {
-                println!("Invalid argument: {}", arg1);
+                logkit::message_compatible_expected_program_argument(&arg1);
             }
         },
         None => {
-            println!("No arguments provided");
+            logkit::message("No arguments provided");
         }
     }
 }

@@ -196,6 +196,11 @@ impl VirtualMachine {
             }
         }
         
+        if !raw_token.is_empty() {
+            tokens.push(raw_token.clone());
+        }
+        
+        
         /*
         println!("======== Tokens ========");
         for i in 0..tokens.len() {
@@ -371,7 +376,7 @@ impl VirtualMachine {
                                                 }
                                             },
                                             None => {
-                                                logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
+                                                logkit::exit_with_positional_error_message("---> Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
                                             }
                                         }
                                     } else {

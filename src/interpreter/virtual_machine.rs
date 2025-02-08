@@ -71,6 +71,7 @@ impl VirtualMachine {
         }
     }
 
+    
     fn tokenize(&mut self) -> Vec<Token> {
         let raw_content = match std::fs::read_to_string(&self.file_path) {
             Ok(content) => content.replace("\r", ""),
@@ -79,117 +80,131 @@ impl VirtualMachine {
                 String::new()
             },
         };
+    
         let mut is_comment = false;
         let mut tokens = Vec::new();
         let mut raw_token = Token::new();
         let mut is_literal_str = false;
+        let mut is_literal_char = false;
         let mut line_counter = 1;
         let mut col_counter = 1;
+        let mut escape_count = 0; // Contar número de barras invertidas antes de uma aspa
+    
         for (i, c) in raw_content.chars().enumerate() {
             match c {
-                '\n' => {is_comment = false;}, // Ambos redefinem is_comment
-                '#' => {is_comment = true;}, // Ambos redefinem is_comment
-                _ => {},
+                '\n' => is_comment = false,
+                '#' => is_comment = true,
+                _ => {}
             }
-            if is_comment { continue; }
-            
+            if is_comment {
+                continue;
+            }
+    
             if is_literal_str {
                 match c {
-                    '"' => { // se for o final de uma literal string
+                    '"' if escape_count % 2 == 0 => { // Fecha string se não for escapada
                         is_literal_str = false;
                         raw_token.push('"');
-                        tokens.push(
-                            raw_token.clone()
-                        );
+                        tokens.push(raw_token.clone());
                         raw_token.clear();
-                        col_counter += 1;
-                    },
-                    '\n' => { 
+                    }
+                    '\n' => {
                         raw_token.push(' ');
-                        line_counter += 1;
-                        col_counter += 1;
-                    },
-                    _ => { 
+                        //line_counter += 1;
+                        //col_counter = 0;
+                    }
+                    _ => {
                         raw_token.push(c);
-                        col_counter += 1;
-                    },
+                    }
                 }
-
-            } else { // if not is_literal_str
+            } else if is_literal_char {
                 match c {
-                    '"' => { // se for o início de uma literal string
+                    '\'' if escape_count % 2 == 0 => { // Fecha char se não for escapado
+                        is_literal_char = false;
+                        raw_token.push('\'');
+                        tokens.push(raw_token.clone());
+                        raw_token.clear();
+                    }
+                    '\n' => {
+                        raw_token.push(' ');
+                    }
+                    _ => {
+                        raw_token.push(c);
+                    }
+                }
+            } else {
+                match c {
+                    '"' => {
                         is_literal_str = true;
                         raw_token.push('"');
                         raw_token.line = line_counter;
                         raw_token.col = col_counter;
-
-                        col_counter += 1;
-                        
-                    },
-                    ',' => { // e.g.: 4,4, 2, 3 -> '4', ',', '4', ',', '2', ',', '3'
+                    }
+                    '\'' => {
+                        is_literal_char = true;
+                        raw_token.push('\'');
+                        raw_token.line = line_counter;
+                        raw_token.col = col_counter;
+                    }
+                    ',' => {
                         if !raw_token.is_empty() {
-                            tokens.push( raw_token.clone() );
+                            tokens.push(raw_token.clone());
                             raw_token.clear();
                         }
-
                         let mut comma_raw_token = Token::new();
                         comma_raw_token.push(',');
                         comma_raw_token.line = line_counter;
                         comma_raw_token.col = col_counter;
-                        tokens.push( comma_raw_token.clone() );
-
-                        col_counter += 1;
-
-                    },
-                    ' ' => {
+                        tokens.push(comma_raw_token);
+                    }
+                    ' ' | '\n' => {
                         if !raw_token.is_empty() {
-                            tokens.push( raw_token.clone() );
+                            tokens.push(raw_token.clone());
                             raw_token.clear();
                         }
-                        
-                        col_counter += 1;
-                    },
-                    '\n' => {
-                        if !raw_token.is_empty() {
-                            tokens.push( raw_token.clone() );
-                            raw_token.clear();
+                        if c == '\n' {
+                            // Acho que nada para se fazer aqui
                         }
-
-                        line_counter += 1;
-                        col_counter = 1;
-                    },
+                    }
                     _ => {
-                        if raw_token.is_empty() { 
+                        if raw_token.is_empty() {
                             raw_token.line = line_counter;
                             raw_token.col = col_counter;
                         }
                         raw_token.push(c);
-
-                        col_counter += 1;
-                    },
+                    }
                 }
             }
-            // ==== Serve para ver se é o último caractere do arquivo, e se for, adiciona-lo como token ====
-            if i == raw_content.len()-1 && !raw_token.is_empty() {
-                if !raw_token.is_empty() {
-                    tokens.push(
-                        raw_token.clone(),
-                    );
-                    raw_token.clear();
-                }
+    
+            // Contar barras invertidas consecutivas antes de uma aspa
+            if c == '\\' {
+                escape_count += 1;
+            } else {
+                escape_count = 0; // Reset se não for barra invertida
             }
-            
+    
+            if c == '\n' {
+                line_counter += 1;
+                col_counter = 1;
+            } else {
+                col_counter += 1;
+            }
+    
+            if i == raw_content.len() - 1 && !raw_token.is_empty() {
+                tokens.push(raw_token.clone());
+            }
         }
         
         /*
         println!("======== Tokens ========");
         for i in 0..tokens.len() {
-            println!("{} --> {:?}",i , tokens[i]);
+            println!("{} --> {:?}", i, tokens[i]);
         }
+        println!("=======================");
         */
         tokens
     }
-
+    
     fn first_pass(&mut self, raw_tokens_vector: &Vec<Token>){
         // ==== PRIMEIRA PASSAGEM ====
         let mut section = Section::Text;
@@ -523,11 +538,15 @@ impl VirtualMachine {
                         Opcode::Addd => {
                             match self.stack.get(instruction.arg as usize) {
                                 Some(value) => {
-                                    self.ac = self.ac
-                                                    .checked_add(*value)
-                                                    .expect(
-                                                        format!("Error: Overflow on line {}, col {}", instruction.line, instruction.col).as_str()
-                                                    );
+                                    let aux_option = self.ac.checked_add(*value);
+                                    match aux_option {
+                                        Some(aux) => {
+                                            self.ac = aux;
+                                        },
+                                        None => {
+                                            logkit::exit_with_positional_error_message("Value range exceeded (+32767)", instruction.line, instruction.col);
+                                        }
+                                    }
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
@@ -537,7 +556,15 @@ impl VirtualMachine {
                         },    Opcode::Subd => {
                             match self.stack.get(instruction.arg as usize) {
                                 Some(value) => {
-                                    self.ac -= *value;
+                                    let aux_option = self.ac.checked_sub(*value);
+                                    match aux_option {
+                                        Some(aux) => {
+                                            self.ac = aux;
+                                        },
+                                        None => {
+                                            logkit::exit_with_positional_error_message("Value range exceeded (-32768)", instruction.line, instruction.col);
+                                        }
+                                    }
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
@@ -912,14 +939,19 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize) -> Vec<i16> {
                         aux_value_counter += 1;
                     },
                     _ => {
-                        let value = aux_raw_token.get_token().parse::<i16>();
-                        match value {
-                            Ok(v) => {
-                                values.push(v);
-                                aux_value_counter += 1;
-                            },
-                            Err(_) => {
-                                break 'aux_value_counter_loop;
+                        if aux_raw_token.is_char_literal() {
+                            values.push(aux_raw_token.to_char_literal() as i16);
+                            aux_value_counter += 1;
+                        } else {
+                            let value = aux_raw_token.get_token().parse::<i16>();
+                            match value {
+                                Ok(v) => {
+                                    values.push(v);
+                                    aux_value_counter += 1;
+                                },
+                                Err(_) => {
+                                    break 'aux_value_counter_loop;
+                                }
                             }
                         }
                     }

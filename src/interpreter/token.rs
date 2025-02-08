@@ -39,6 +39,30 @@ impl Token {
         self.token.chars().nth(0) == Some('"') && self.token.chars().nth(self.token.len()-1) == Some('"')
     }
 
+    pub fn is_char_literal(&self) -> bool { // e.g.: 'a', '\n', '\t', '\0', '\'', '"', '\\'
+        self.token.len() == 3 && self.token.chars().nth(0) == Some('\'') && self.token.chars().nth(2) == Some('\'')
+        || self.token == "'\\n'" || self.token == "'\\t'" || self.token == "'\\0'" || self.token == "'\\''" || self.token == "'\"'" || self.token == "'\\\\'"
+    }
+
+    pub fn to_char_literal(&self) -> char {
+        if self.token.len() == 3 && self.token.chars().nth(0) == Some('\'') && self.token.chars().nth(2) == Some('\'') {
+            self.token.chars().nth(1).unwrap()
+        } else {
+            match self.token.as_str() {
+                "'\\n'" => '\n',
+                "'\\t'" => '\t',
+                "'\\0'" => '\0',
+                "'\\''" => '\'',
+                "'\"'" => '"',
+                "'\\\\'" => '\\',
+                _ => {
+                    logkit::exit_with_positional_error_message("Invalid character literal", self.line, self.col);
+                    ' ' // Nunca vai chegar aqui
+                }
+            }
+        }
+    }
+
     pub fn is_label(&self) -> bool {
         self.token.chars().nth(self.token.len()-1) == Some(':')
     }
@@ -96,7 +120,6 @@ impl Token {
             return None; 
         }
     
-        println!("----> <{}> :: <{}>", string_to_process, processed_string); // e.g.: <"\\"> :: <\> ou <"\""> :: <">
         Some(processed_string)
     }
 }

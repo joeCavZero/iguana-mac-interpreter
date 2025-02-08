@@ -1,18 +1,8 @@
 .data
-COMMA: .ascii "\n"
-MAX: .word 10
-ONE: .word 1
-
+    UM: .word 1
 .text
-    LODD MAX
+    LOCO 10
 LOOP:
-    PRINTAC
-    SUBD ONE
-    STOD MAX
-    LODD COMMA
-    PRINTACCHAR
-    LODD MAX
-    JNEG END
+    SUBD UM
+    PRINTLNAC
     JUMP LOOP
-END:
-    HALT

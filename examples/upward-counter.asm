@@ -1,15 +1,24 @@
 .data
     COMMA: .ascii ","
-    ONE: .word 0
+    ONE: .word 1
     COUNTER: .word 0
+    MAX: .word 5
 .text
 LOOP:
-    PRINTAC
     LODD COUNTER
-    ADDD ONE
     PRINTAC
+    ADDD ONE
     STOD COUNTER
     LODD COMMA
     PRINTACCHAR
-    SLEEPI 1
+    SLEEPD ONE
+
+    LODD MAX
+    SUBD COUNTER
+
+    JZER END
+    JNEG END
+
     JUMP LOOP
+END:
+    HALT

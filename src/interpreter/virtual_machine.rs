@@ -1,6 +1,7 @@
 
 
 use std::collections::HashMap;
+use std::io::{self, Write};
 
 use crate::interpreter::token::Token;
 use super::{instruction::Instruction, logkit, opcode::Opcode};
@@ -766,10 +767,12 @@ impl VirtualMachine {
 
                         Opcode::Printlnac => {
                             println!("{}", self.ac);
+                            io::stdout().flush().unwrap();
                             self.pc += 1;
                         },
                         Opcode::Printac => {
                             print!("{}", self.ac);
+                            io::stdout().flush().unwrap();
                             self.pc += 1;
                         }
 
@@ -777,6 +780,7 @@ impl VirtualMachine {
                             match self.stack.get(self.sp as usize + instruction.arg as usize) {
                                 Some(value) => {
                                     println!("{}", value);
+                                    io::stdout().flush().unwrap();
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
@@ -789,6 +793,7 @@ impl VirtualMachine {
                             match self.stack.get(self.sp as usize - instruction.arg as usize) {
                                 Some(value) => {
                                     println!("{}", value);
+                                    io::stdout().flush().unwrap();
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
@@ -801,6 +806,7 @@ impl VirtualMachine {
                             match self.stack.get(self.sp as usize + instruction.arg as usize) {
                                 Some(value) => {
                                     print!("{}", value);
+                                    io::stdout().flush().unwrap();
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
@@ -813,6 +819,7 @@ impl VirtualMachine {
                             match self.stack.get(self.sp as usize - instruction.arg as usize) {
                                 Some(value) => {
                                     print!("{}", value);
+                                    io::stdout().flush().unwrap();
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
@@ -824,10 +831,12 @@ impl VirtualMachine {
 
                         Opcode::Printlnacchar => {
                             println!("{}", self.ac as u8 as char);
+                            io::stdout().flush().unwrap();
                             self.pc += 1;
                         }
                         Opcode::Printacchar => {
                             print!("{}", self.ac as u8 as char);
+                            io::stdout().flush().unwrap();
                             self.pc += 1;
                         }
 
@@ -835,6 +844,7 @@ impl VirtualMachine {
                             match self.stack.get(self.sp as usize + instruction.arg as usize) {
                                 Some(value) => {
                                     println!("{}", *value as u8 as char);
+                                    io::stdout().flush().unwrap();
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
@@ -848,6 +858,7 @@ impl VirtualMachine {
                             match self.stack.get(self.sp as usize - instruction.arg as usize) {
                                 Some(value) => {
                                     println!("{}", *value as u8 as char);
+                                    io::stdout().flush().unwrap();
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
@@ -860,6 +871,7 @@ impl VirtualMachine {
                             match self.stack.get(self.sp as usize + instruction.arg as usize) {
                                 Some(value) => {
                                     print!("{}", *value as u8 as char);
+                                    io::stdout().flush().unwrap();
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
@@ -872,6 +884,7 @@ impl VirtualMachine {
                             match self.stack.get(self.sp as usize - instruction.arg as usize) {
                                 Some(value) => {
                                     print!("{}", *value as u8 as char);
+                                    io::stdout().flush().unwrap();
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
@@ -883,9 +896,7 @@ impl VirtualMachine {
 
 
                         Opcode::Andi => {
-                            print!("----> ac: {:2b}, instruction.arg: {:2b}", self.ac, instruction.arg);
                             self.ac = self.ac & instruction.arg;
-                            println!(" ----> novo ac: {}", self.ac);
                             self.pc += 1;
                         },
                         Opcode::Ori => {

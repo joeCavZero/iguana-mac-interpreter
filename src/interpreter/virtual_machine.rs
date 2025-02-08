@@ -531,13 +531,15 @@ impl VirtualMachine {
                         Opcode::Addd => {
                             match self.stack.get(instruction.arg as usize) {
                                 Some(value) => {
-                                    let aux_option = self.ac.checked_add(*value);
-                                    match aux_option {
-                                        Some(aux) => {
-                                            self.ac = aux;
-                                        },
-                                        None => {
-                                            logkit::exit_with_positional_error_message("Value range exceeded (+32767)", instruction.line, instruction.col);
+                                    if *value != 0 {
+                                        let aux_option = self.ac.checked_add(*value);
+                                        match aux_option {
+                                            Some(aux) => {
+                                                self.ac = aux;
+                                            },
+                                            None => {
+                                                logkit::exit_with_positional_error_message("Value range exceeded (+32767)", instruction.line, instruction.col);
+                                            }
                                         }
                                     }
                                 },
@@ -549,13 +551,15 @@ impl VirtualMachine {
                         },    Opcode::Subd => {
                             match self.stack.get(instruction.arg as usize) {
                                 Some(value) => {
-                                    let aux_option = self.ac.checked_sub(*value);
-                                    match aux_option {
-                                        Some(aux) => {
-                                            self.ac = aux;
-                                        },
-                                        None => {
-                                            logkit::exit_with_positional_error_message("Value range exceeded (-32768)", instruction.line, instruction.col);
+                                    if *value != 0 {
+                                        let aux_option = self.ac.checked_sub(*value);
+                                        match aux_option {
+                                            Some(aux) => {
+                                                self.ac = aux;
+                                            },
+                                            None => {
+                                                logkit::exit_with_positional_error_message("Value range exceeded (-32768...32767)", instruction.line, instruction.col);
+                                            }
                                         }
                                     }
                                 },
@@ -634,7 +638,7 @@ impl VirtualMachine {
                                             self.ac = aux;
                                         },
                                         None => {
-                                            logkit::exit_with_positional_error_message("Value range exceeded (-32768)", instruction.line, instruction.col);
+                                            logkit::exit_with_positional_error_message("Value range exceeded (-32768...32767)", instruction.line, instruction.col);
                                         }
                                     }
                                 },

@@ -55,7 +55,7 @@ pub fn message(message: &str) {
 
 pub fn exit_with_positional_error_message(message: &str, line: u32, col: u32) {  
     println!(
-        "{} {} {} {}",
+        "\n{} {} {} {}",
         interpreter_name_piece(), 
         error_piece(),
         message, 
@@ -68,7 +68,7 @@ pub fn exit_with_positional_error_message(message: &str, line: u32, col: u32) {
 
 pub fn exit_with_error_message(message: &str) {
     println!(
-        "{} {} {}",
+        "\n{} {} {}",
         interpreter_name_piece(),
         error_piece(),
         message

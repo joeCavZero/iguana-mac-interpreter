@@ -15,4 +15,5 @@ LOOP:
     LODD MAX
     JNEG END
     JUMP LOOP
-END: HALT
+END: 
+    HALT

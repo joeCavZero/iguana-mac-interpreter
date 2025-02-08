@@ -6,7 +6,7 @@ use std::io::{self, Write};
 use crate::interpreter::token::Token;
 use super::{instruction::Instruction, logkit, opcode::Opcode};
 
-const STACK_SIZE: usize = 2048;
+const STACK_SIZE: usize = 16384;
 
 enum Section {
     Data,

@@ -1,4 +1,9 @@
-# Iguana MAC Interpreter
+<div align="center">
+  <img src=".assets/logo.png" width="200" style="border-radius: 10%;" />
+</div>
+
+<h1 align="center">IGUANA MAC INTERPRETER</h1>
+
 
 An interpreter for Andrew S. Tanenbaum's MAC assembly.
 

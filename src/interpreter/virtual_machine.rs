@@ -89,9 +89,9 @@ impl VirtualMachine {
         let mut is_literal_char = false;
         let mut line_counter = 1;
         let mut col_counter = 1;
-        let mut escape_count = 0; // Contar número de barras invertidas antes de uma aspa
+        let mut escape_count = 0;
     
-        for (i, c) in raw_content.chars().enumerate() {
+        for (_, c) in raw_content.chars().enumerate() {
             match c {
                 '\n' => is_comment = false,
                 '#' => is_comment = true,
@@ -103,7 +103,7 @@ impl VirtualMachine {
     
             if is_literal_str {
                 match c {
-                    '"' if escape_count % 2 == 0 => { // Fecha string se não for escapada
+                    '"' if escape_count % 2 == 0 => {
                         is_literal_str = false;
                         raw_token.push('"');
                         tokens.push(raw_token.clone());
@@ -111,8 +111,6 @@ impl VirtualMachine {
                     }
                     '\n' => {
                         raw_token.push(' ');
-                        //line_counter += 1;
-                        //col_counter = 0;
                     }
                     _ => {
                         raw_token.push(c);
@@ -120,7 +118,7 @@ impl VirtualMachine {
                 }
             } else if is_literal_char {
                 match c {
-                    '\'' if escape_count % 2 == 0 => { // Fecha char se não for escapado
+                    '\'' if escape_count % 2 == 0 => {
                         is_literal_char = false;
                         raw_token.push('\'');
                         tokens.push(raw_token.clone());
@@ -163,9 +161,6 @@ impl VirtualMachine {
                             tokens.push(raw_token.clone());
                             raw_token.clear();
                         }
-                        if c == '\n' {
-                            // Acho que nada para se fazer aqui
-                        }
                     }
                     _ => {
                         if raw_token.is_empty() {
@@ -177,11 +172,10 @@ impl VirtualMachine {
                 }
             }
     
-            // Contar barras invertidas consecutivas antes de uma aspa
             if c == '\\' {
                 escape_count += 1;
             } else {
-                escape_count = 0; // Reset se não for barra invertida
+                escape_count = 0;
             }
     
             if c == '\n' {
@@ -190,17 +184,12 @@ impl VirtualMachine {
             } else {
                 col_counter += 1;
             }
+        }
     
-            if i == raw_content.len() - 1 && !raw_token.is_empty() {
-                tokens.push(raw_token.clone());
-            }
-        }
-        
+        // Aqui removemos a adição redundante do último token
         if !raw_token.is_empty() {
-            tokens.push(raw_token.clone());
+            tokens.push(raw_token);
         }
-        
-        
         /*
         println!("======== Tokens ========");
         for i in 0..tokens.len() {

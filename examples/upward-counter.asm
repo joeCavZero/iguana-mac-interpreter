@@ -1,3 +1,4 @@
+# program to print an upward counter
 .data
     COMMA: .ascii ","
     ONE: .word 1

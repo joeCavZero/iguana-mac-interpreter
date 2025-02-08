@@ -1,4 +1,4 @@
-#programa de achar o BIGGER valor entre VAL1 e VAL2
+# program to find the biggest value between two numbers
 .data
 VAL1: .word 10
 VAL2: .word 257

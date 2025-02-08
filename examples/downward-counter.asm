@@ -1,4 +1,4 @@
-# programa que imprime os números de MAX a 1, separados por vírgula
+# program to print a downward counter
 .data
 COMMA: .ascii ","
 MAX: .word 10

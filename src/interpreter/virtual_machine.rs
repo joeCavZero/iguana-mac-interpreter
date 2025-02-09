@@ -43,7 +43,7 @@ impl VirtualMachine {
     pub fn run(&mut self) {
         let tokens = self.tokenize();
     
-        self.print_tokens(&tokens);
+        //self.print_tokens(&tokens);
 
         self.first_pass(&tokens);
         self.second_pass(&tokens);
@@ -310,7 +310,11 @@ impl VirtualMachine {
                                                                          * 
                                                                          *  ou seja, o primeiro byte da string literal é o último a ser colocado na stack (a stack cresce de cima para baixo)
                                                                          */
-                                                                        string_literal_bytes.reverse(); 
+
+                                                                        /* Decidir usar isso é importante, pois a ordem dos bytes da string literal é importante !!!!!
+                                                                         *  string_literal_bytes.reverse(); 
+                                                                         */
+
                                                                         for b in string_literal_bytes {
                                                                             self.sp -= 1;
                                                                             self.stack[self.sp as usize] = b as i16

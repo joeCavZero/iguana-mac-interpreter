@@ -688,7 +688,7 @@ impl VirtualMachine {
                         },
                         Opcode::Call => {
                             self.sp -= 1; // incrementa o sp
-                            match self.set_stack_value(self.sp as i64, self.pc as i16 + 1) {
+                            match self.set_stack_value(self.sp as i64, self.pc as i16) {
                                 Ok(_) => {},
                                 Err(_) => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);

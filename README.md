@@ -177,7 +177,7 @@ output:
 
 - **CALL X**  
   **Behavior**: Calls a subroutine at address `X`, saving the return address on the stack.  
-  **Pseudo-behavior**: `sp = sp - 1; M[sp] = pc + 1; pc = X`
+  **Pseudo-behavior**: `sp = sp - 1; M[sp] = pc; pc = X`
 
 - **RETN**  
   **Behavior**: Returns from a subroutine by popping the return address from the stack.  

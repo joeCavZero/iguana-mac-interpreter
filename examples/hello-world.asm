@@ -1,3 +1,4 @@
+# program to print a string
 .data
 STRING: .asciiz "Hello, World!"
 AUX: .word 0

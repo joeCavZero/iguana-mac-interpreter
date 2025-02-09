@@ -241,6 +241,12 @@ impl VirtualMachine {
                                     
                                     if actual_raw_token.is_label() {
                                         let label = actual_raw_token.get_token()[..actual_raw_token.get_token().len()-1].to_string();
+                                        
+                                        // Isso serve para impedir que uma label tenha o mesmo nome de uma instrução
+                                        if Opcode::from_str(label.as_str()) != Opcode::None {
+                                            logkit::exit_with_positional_error_message("Label name cannot be an instruction name", actual_raw_token.line, actual_raw_token.col);
+                                        }
+                                        
                                         let next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter+1);
                                         if next_raw_token_option.is_none() {
                                             logkit::exit_with_positional_error_message("Expected .word, .byte, .ascii or .asciiz after label", actual_raw_token.line, actual_raw_token.col);

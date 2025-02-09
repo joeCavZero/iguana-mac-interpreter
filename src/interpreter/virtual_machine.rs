@@ -29,7 +29,7 @@ pub struct VirtualMachine {
 #[allow(dead_code)]
 impl VirtualMachine {
     pub fn new(file_path: &str) -> VirtualMachine {
-        VirtualMachine {
+        let mut vm = VirtualMachine {
             file_path: file_path.to_string(),
             ac: 0,
             pc: 0,
@@ -37,7 +37,13 @@ impl VirtualMachine {
             memory: Vec::new(),
             stack: [0; STACK_SIZE],
             symbol_table: HashMap::new(),
+        };
+
+        // randomize the stack
+        for i in 0..vm.stack.len() {
+            vm.stack[i] = rand::random::<i16>();
         }
+        vm
     }
 
     pub fn run(&mut self) {

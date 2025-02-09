@@ -42,6 +42,9 @@ impl VirtualMachine {
 
     pub fn run(&mut self) {
         let tokens = self.tokenize();
+    
+        self.print_tokens(&tokens);
+
         self.first_pass(&tokens);
         self.second_pass(&tokens);
         
@@ -63,6 +66,7 @@ impl VirtualMachine {
         for i in 0..self.symbol_table.len() {
             println!("{} --> {} :: {:?}", i, self.symbol_table.keys().nth(i).unwrap(), self.symbol_table.values().nth(i).unwrap());
         }
+        println!("=============================");
     }
 
     fn print_memory(&self) {
@@ -70,8 +74,16 @@ impl VirtualMachine {
         for i in 0..self.memory.len() {
             println!("{} --> {:?}", i, self.memory[i]);
         }
+        println!("=======================");
     }
 
+    fn print_tokens(&self, tokens: &Vec<Token>) {
+        println!("======== Tokens ========");
+        for i in 0..tokens.len() {
+            println!("{} --> {}", i, tokens[i].get_token());
+        }
+        println!("=======================");
+    }
     
     fn tokenize(&mut self) -> Vec<Token> {
         let raw_content = match std::fs::read_to_string(&self.file_path) {
@@ -190,16 +202,12 @@ impl VirtualMachine {
         if !raw_token.is_empty() {
             tokens.push(raw_token);
         }
-        /*
-        println!("======== Tokens ========");
-        for i in 0..tokens.len() {
-            println!("{} --> {:?}", i, tokens[i]);
-        }
-        println!("=======================");
-        */
+        
         tokens
     }
     
+    
+
     fn first_pass(&mut self, raw_tokens_vector: &Vec<Token>){
         // ==== PRIMEIRA PASSAGEM ====
         let mut section = Section::Text;
@@ -248,7 +256,12 @@ impl VirtualMachine {
                                                     
 
                                                     if values.len() == 0 {
-                                                        logkit::exit_with_positional_error_message("Expected at least one value after label", actual_raw_token.line, actual_raw_token.col);
+                                                        if next_raw_token.get_token() == ".word" {
+                                                            logkit::exit_with_positional_error_message(format!("Expected at least one valid value after .word after label {}, found {} valid values", label, values.len()).as_str(), actual_raw_token.line, actual_raw_token.col);
+                                                        } else if next_raw_token.get_token() == ".byte" {
+                                                            logkit::exit_with_positional_error_message(format!("Expected at least one valid value after .byte after label {}, found {} valid values", label, values.len()).as_str(), actual_raw_token.line, actual_raw_token.col);
+                                                        }
+                                                        
                                                     } else {
                                                         self.symbol_table.insert(
                                                             label,
@@ -326,7 +339,7 @@ impl VirtualMachine {
                                 
                                         }
                                     } else {
-                                        logkit::exit_with_positional_error_message("Expected a label", actual_raw_token.line, actual_raw_token.col);
+                                        logkit::exit_with_positional_error_message("Expected a label or a valid value after comma", actual_raw_token.line, actual_raw_token.col);
                                     }
                                 },
                                 Section::Text => {
@@ -668,8 +681,17 @@ impl VirtualMachine {
                             self.pc = instruction.arg as u32;
                         },
                         Opcode::Pshi => {
-                            self.sp -= 1;
-                            match self.set_stack_value(self.sp as i64, self.ac) {
+                            self.sp -= 1; // incrementa o sp
+
+                            let aux = match self.stack.get(self.ac as usize) {
+                                Some(value) => *value,
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.ac).as_str(), instruction.line, instruction.col);
+                                    0
+                                }
+                            };
+
+                            match self.set_stack_value(self.sp as i64, aux) {
                                 Ok(_) => {},
                                 Err(_) => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
@@ -726,7 +748,7 @@ impl VirtualMachine {
                             self.sp += 1; // decrementa o sp
                         },
                         Opcode::Swap => {
-                            let aux = match self.stack.get(self.sp as usize) {
+                            let tmp = match self.stack.get(self.sp as usize) {
                                 Some(value) => *value,
                                 None => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
@@ -739,15 +761,33 @@ impl VirtualMachine {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
                                 }
                             }
-                            self.ac = aux;
+                            self.ac = tmp;
                             self.pc += 1;
                         },
                         Opcode::Insp => {
-                            self.sp += instruction.arg as u32;
+                            match self.sp.checked_sub(instruction.arg as u32) {
+                                Some(aux) => {
+                                    self.sp = aux;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
+                                }
+                            }
                             self.pc += 1;
                         },
                         Opcode::Desp => {
-                            self.sp -= instruction.arg as u32;
+                            //self.sp += instruction.arg as u32;
+                            match self.sp.checked_add(instruction.arg as u32) {
+                                Some(aux) => {
+                                    self.sp = aux;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
+                                }
+                            }
+                            if self.sp as usize >= STACK_SIZE {
+                                logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
+                            }
                             self.pc += 1;
                         },
                         
@@ -758,7 +798,9 @@ impl VirtualMachine {
                             break;
                         },
 
-
+                        /*
+                         *  DEBUG PRINTS
+                         */
                         Opcode::Printlnac => {
                             println!("{}", self.ac);
                             io::stdout().flush().unwrap();

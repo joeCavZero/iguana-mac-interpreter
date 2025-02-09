@@ -97,11 +97,11 @@ output:
 
 - **PSHI**  
   **Behavior**: Pushes the value in the accumulator (`ac`) onto the stack.  
-  **Pseudo-behavior**: `sp = sp - 1; M[sp] = ac`
+  **Pseudo-behavior**: `sp = sp - 1; M[sp] = M[ac]`
 
 - **POPI**  
-  **Behavior**: Pops a value from the stack into the accumulator (`ac`).  
-  **Pseudo-behavior**: `ac = M[sp]; sp = sp + 1`
+  **Behavior**: Pops a value from the stack into the memory address stored in the accumulator (`AC`).  
+  **Pseudo-behavior**: `M[AC] = M[SP]; SP = SP + 1`
 
 - **PUSH**  
   **Behavior**: Pushes the value in the accumulator (`ac`) onto the stack.  
@@ -117,11 +117,11 @@ output:
 
 - **INSP X**  
   **Behavior**: Increments the stack pointer (`sp`) by `X`.  
-  **Pseudo-behavior**: `sp = sp + X`
+  **Pseudo-behavior**: `sp = sp - X`
 
 - **DESP X**  
   **Behavior**: Decrements the stack pointer (`sp`) by `X`.  
-  **Pseudo-behavior**: `sp = sp - X`
+  **Pseudo-behavior**: `sp = sp + X`
 
 ---
 
@@ -237,7 +237,7 @@ output:
 
 ---
 
-## Debug Operations (Prints)
+## Debug Operations
 
 - **PRINTLNAC**  
   **Behavior**: Prints the value in the accumulator (`ac`) as a new line.  

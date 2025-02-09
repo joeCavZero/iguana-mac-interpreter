@@ -31,9 +31,11 @@ pub enum Opcode {
      */
     
     Printlnac, Printac,
-    Printlnspi, Printlnspd, Printspi, Printspd,
     Printlnacchar, Printacchar,
-    Printlnspchari, Printlnspchard, Printspchari, Printspchard,
+
+    Printsp, Printlnsp,
+    Printlntopi, Printlntopd, Printtopi, Printtopd,
+    Printlntopchari, Printlntopchard, Printtopchari, Printtopchard,
 
     Halt,
     Andi,
@@ -63,19 +65,9 @@ impl Opcode {
     pub fn is_argumented(op: Opcode) -> bool {
         match op {
             Opcode::Pshi | Opcode::Popi | Opcode::Push | Opcode::Pop | Opcode::Retn | Opcode::Swap | Opcode::Insp | Opcode::Desp | Opcode::Halt |
-            Opcode::Printlnac | Opcode::Printac | Opcode::Printlnacchar | Opcode::Printacchar 
+            Opcode::Printlnac | Opcode::Printac | Opcode::Printlnacchar | Opcode::Printacchar    | Opcode::Printsp | Opcode::Printlnsp
                 => false,
             _
-                => true,
-        }
-    }
-
-    pub fn is_argumented_opcode_str(name: &str) -> bool {
-        match name {
-            "PSHI" | "POPI" | "PUSH" | "POP" | "RETN" | "SWAP" | "INSP" | "DESP" | "HALT" | 
-            "PRINTLNAC" | "PRINTAC" | "PRINTLNACCHAR" | "PRINTACCHAR" 
-                => false,
-            _ 
                 => true,
         }
     }
@@ -109,9 +101,11 @@ impl Opcode {
             "HALT" => Opcode::Halt,
 
             "PRINTLNAC" => Opcode::Printlnac, "PRINTAC" => Opcode::Printac,
-            "PRINTLNSPI" => Opcode::Printlnspi, "PRINTLNSPD" => Opcode::Printlnspd, "PRINTSPI" => Opcode::Printspi, "PRINTSPD" => Opcode::Printspd,
             "PRINTLNACCHAR" => Opcode::Printlnacchar, "PRINTACCHAR" => Opcode::Printacchar,
-            "PRINTLNSPCHARI" => Opcode::Printlnspchari, "PRINTLNSPCHARD" => Opcode::Printlnspchard, "PRINTSPCHARI" => Opcode::Printspchari, "PRINTSPCHARD" => Opcode::Printspchard,
+
+            "PRINTSP" => Opcode::Printsp, "PRINTLNSP" => Opcode::Printlnsp,
+            "PRINTLNTOPI" => Opcode::Printlntopi, "PRINTLNTOPD" => Opcode::Printlntopd, "PRINTTOPI" => Opcode::Printtopi, "PRINTTOPD" => Opcode::Printtopd,
+            "PRINTLNTOPCHARI" => Opcode::Printlntopchari, "PRINTLNTOPCHARD" => Opcode::Printlntopchard, "PRINTTOPCHARI" => Opcode::Printtopchari, "PRINTTOPCHARD" => Opcode::Printtopchard,
 
             "ANDI" => Opcode::Andi, 
             "ORI" => Opcode::Ori,

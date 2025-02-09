@@ -748,20 +748,9 @@ impl VirtualMachine {
                             self.sp += 1; // decrementa o sp
                         },
                         Opcode::Swap => {
-                            let tmp = match self.stack.get(self.sp as usize) {
-                                Some(value) => *value,
-                                None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
-                                    0
-                                }
-                            };
-                            match self.set_stack_value(self.sp as i64, self.ac) {
-                                Ok(_) => {},
-                                Err(_) => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
-                                }
-                            }
-                            self.ac = tmp;
+                            let tmp = self.ac;
+                            self.ac = self.sp as i16;
+                            self.sp = tmp as u32;
                             self.pc += 1;
                         },
                         Opcode::Insp => {
@@ -812,7 +801,7 @@ impl VirtualMachine {
                             self.pc += 1;
                         }
 
-                        Opcode::Printlnspi => {
+                        Opcode::Printlntopi => {
                             match self.stack.get(self.sp as usize + instruction.arg as usize) {
                                 Some(value) => {
                                     println!("{}", value);
@@ -825,7 +814,7 @@ impl VirtualMachine {
 
                             self.pc += 1;
                         },
-                        Opcode::Printlnspd => {
+                        Opcode::Printlntopd => {
                             match self.stack.get(self.sp as usize - instruction.arg as usize) {
                                 Some(value) => {
                                     println!("{}", value);
@@ -838,7 +827,7 @@ impl VirtualMachine {
 
                             self.pc += 1;
                         },
-                        Opcode::Printspi => {
+                        Opcode::Printtopi => {
                             match self.stack.get(self.sp as usize + instruction.arg as usize) {
                                 Some(value) => {
                                     print!("{}", value);
@@ -851,7 +840,7 @@ impl VirtualMachine {
 
                             self.pc += 1;
                         }
-                        Opcode::Printspd => {
+                        Opcode::Printtopd => {
                             match self.stack.get(self.sp as usize - instruction.arg as usize) {
                                 Some(value) => {
                                     print!("{}", value);
@@ -876,7 +865,7 @@ impl VirtualMachine {
                             self.pc += 1;
                         }
 
-                        Opcode::Printlnspchari => {
+                        Opcode::Printlntopchari => {
                             match self.stack.get(self.sp as usize + instruction.arg as usize) {
                                 Some(value) => {
                                     println!("{}", *value as u8 as char);
@@ -890,7 +879,7 @@ impl VirtualMachine {
                             self.pc += 1;
                         }
 
-                        Opcode::Printlnspchard => {
+                        Opcode::Printlntopchard => {
                             match self.stack.get(self.sp as usize - instruction.arg as usize) {
                                 Some(value) => {
                                     println!("{}", *value as u8 as char);
@@ -903,7 +892,7 @@ impl VirtualMachine {
 
                             self.pc += 1;
                         }
-                        Opcode::Printspchari => {
+                        Opcode::Printtopchari => {
                             match self.stack.get(self.sp as usize + instruction.arg as usize) {
                                 Some(value) => {
                                     print!("{}", *value as u8 as char);
@@ -916,7 +905,7 @@ impl VirtualMachine {
 
                             self.pc += 1;
                         }
-                        Opcode::Printspchard => {
+                        Opcode::Printtopchard => {
                             match self.stack.get(self.sp as usize - instruction.arg as usize) {
                                 Some(value) => {
                                     print!("{}", *value as u8 as char);
@@ -928,8 +917,19 @@ impl VirtualMachine {
                             }
 
                             self.pc += 1;
-                        }
+                        },
 
+                        Opcode::Printsp => {
+                            print!("{}", self.sp);
+                            io::stdout().flush().unwrap();
+                            self.pc += 1;
+                        },
+
+                        Opcode::Printlnsp => {
+                            println!("{}", self.sp);
+                            io::stdout().flush().unwrap();
+                            self.pc += 1;
+                        },
 
                         Opcode::Andi => {
                             self.ac = self.ac & instruction.arg;

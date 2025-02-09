@@ -113,7 +113,7 @@ output:
 
 - **SWAP**  
   **Behavior**: Swaps the value in the accumulator (`ac`) with the value at the top of the stack.  
-  **Pseudo-behavior**: `temp = ac; ac = M[sp]; M[sp] = temp`
+  **Pseudo-behavior**: `temp = ac; ac = sp; sp = temp`
 
 - **INSP X**  
   **Behavior**: Increments the stack pointer (`sp`) by `X`.  
@@ -240,50 +240,58 @@ output:
 ## Debug Operations
 
 - **PRINTLNAC**  
-  **Behavior**: Prints the value in the accumulator (`ac`) as a new line.  
+  **Behavior**: Prints the value in the accumulator (`ac`) with a line break.  
   **Pseudo-behavior**: `print( ac + '\n' )`
 
 - **PRINTAC**  
   **Behavior**: Prints the value in the accumulator (`ac`).  
   **Pseudo-behavior**: `print( ac )`
 
-- **PRINTLNSPI X**  
-  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a new line.  
+- **PRINTLNSP**  
+  **Behavior**: Prints the value in the stack pointer (`sp`) with a line break.  
+  **Pseudo-behavior**: `print( sp + '\n' )`
+
+- **PRINTSP**  
+  **Behavior**: Prints the value in the stack pointer (`sp`).  
+  **Pseudo-behavior**: `print( sp )`
+
+- **PRINTLNTOPI X**  
+  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) with a line break.  
   **Pseudo-behavior**: `print( M[sp + X] + '\n' )`
 
-- **PRINTLNSPD X**  
-  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a new line.  
+- **PRINTLNTOPD X**  
+  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) with a line break.  
   **Pseudo-behavior**: `print( M[sp - X] + '\n' )`
 
-- **PRINTSPI X**  
+- **PRINTTOPI X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`).  
   **Pseudo-behavior**: `print( M[sp + X] )`
 
-- **PRINTSPD X**  
+- **PRINTTOPD X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`).  
   **Pseudo-behavior**: `print( M[sp - X] )`
 
 - **PRINTLNACCHAR**  
-  **Behavior**: Prints the value in the accumulator (`ac`) as a character (new line).  
+  **Behavior**: Prints the value in the accumulator (`ac`) as a character with a line break.  
   **Pseudo-behavior**: `print( char(ac) + '\n' )`
 
 - **PRINTACCHAR**  
   **Behavior**: Prints the value in the accumulator (`ac`) as a character.  
   **Pseudo-behavior**: `print( char(ac) )`
 
-- **PRINTLNSPCHARI X**  
-  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character (new line).  
+- **PRINTLNTOPCHARI X**  
+  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character with a line break.  
   **Pseudo-behavior**: `print( char(M[sp + X]) + '\n' )`
 
-- **PRINTLNSPCHARD X**  
-  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character (new line).  
+- **PRINTLNTOPCHARD X**  
+  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character with a line break.  
   **Pseudo-behavior**: `print( char(M[sp - X]) + '\n')`
 
-- **PRINTSPCHARI X**  
+- **PRINTTOPCHARI X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character.  
   **Pseudo-behavior**: `print( char(M[sp + X]) )`
 
-- **PRINTSPCHARD X**  
+- **PRINTTOPCHARD X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character.  
   **Pseudo-behavior**: `print( char(M[sp - X]) )`
 

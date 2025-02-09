@@ -562,7 +562,7 @@ impl VirtualMachine {
                                                 self.ac = aux;
                                             },
                                             None => {
-                                                logkit::exit_with_positional_error_message("Value range exceeded (+32767)", instruction.line, instruction.col);
+                                                logkit::exit_with_positional_error_message("Value range exceeded (-32768...32767)", instruction.line, instruction.col);
                                             }
                                         }
                                     }
@@ -643,7 +643,7 @@ impl VirtualMachine {
                                             self.ac = aux;
                                         },
                                         None => {
-                                            logkit::exit_with_positional_error_message("Value range exceeded (+32767)", instruction.line, instruction.col);
+                                            logkit::exit_with_positional_error_message("Value range exceeded (-32768...32767)", instruction.line, instruction.col);
                                         }
                                     }
                                 },
@@ -1049,7 +1049,7 @@ impl VirtualMachine {
                                             self.ac = aux;
                                         },
                                         None => {
-                                            logkit::exit_with_positional_error_message("Value range exceeded (+32767)", instruction.line, instruction.col);
+                                            logkit::exit_with_positional_error_message("Value range exceeded (-32768...32767)", instruction.line, instruction.col);
                                         }
                                     }
                                 },

@@ -5,7 +5,9 @@ fn main() {
     
     match args.len() {
         1 => {
-            logkit::exit_with_error_message("No arguments provided");
+            logkit::exit_with_error_message(
+                "No arguments provided, usage: 'info' or 'run <file>'"
+            );
         },
         2 => {
             if args[1] == "info" {
@@ -25,7 +27,7 @@ fn main() {
             }
         },
         _ => {
-            logkit::exit_with_error_message("Invalid number of arguments");
+            logkit::exit_with_error_message("Invalid number of arguments, usage: 'info' or 'run <file>'");
         }
     }
 }

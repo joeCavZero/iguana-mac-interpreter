@@ -1125,7 +1125,10 @@ impl VirtualMachine {
                         Opcode::Sleepd => {
                             match self.stack.get(instruction.arg as usize) {
                                 Some(value) => {
-                                    std::thread::sleep(std::time::Duration::from_secs(*value as u64));
+                                    if *value < 0 {
+                                        logkit::exit_with_positional_error_message("Sleep time cannot be negative", instruction.line, instruction.col);
+                                    }
+                                    std::thread::sleep(std::time::Duration::from_millis(*value as u64));
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
@@ -1134,7 +1137,10 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Sleepi => {
-                            std::thread::sleep(std::time::Duration::from_secs(instruction.arg as u64));
+                            if instruction.arg < 0 {
+                                logkit::exit_with_positional_error_message("Sleep time cannot be negative", instruction.line, instruction.col);
+                            }
+                            std::thread::sleep(std::time::Duration::from_millis(instruction.arg as u64));
                             self.pc += 1;
                         }
                     }

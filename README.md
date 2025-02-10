@@ -285,7 +285,7 @@ output:
 
 - **PRINTLNTOPCHARD X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character with a line break.  
-  **Pseudo-behavior**: `print( char(M[sp - X]) + '\n')`
+  **Pseudo-behavior**: `print( char(M[sp - X]) + '\n' )`
 
 - **PRINTTOPCHARI X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character.  
@@ -300,14 +300,14 @@ output:
 ## Custom Operations
 
 - **HALT**  
-  **Behavior**: Stops the execution of the program.  
+  **Behavior**: Stops the execution of the entire program.  
   **Pseudo-behavior**: `halt`
 
 - **SLEEPD X**  
-  **Behavior**: Pauses execution for the number of seconds specified by the value at address `X` in the stack.  
-  **Pseudo-behavior**: `sleep(M[X])`
+  **Behavior**: Pauses execution for the number of milliseconds specified by the value at address `X` in the stack.  
+  **Pseudo-behavior**: `sleep_in_milliseconds( M[X] )`
 
 - **SLEEPI X**  
-  **Behavior**: Pauses execution for `X` seconds.  
-  **Pseudo-behavior**: `sleep(X)`
+  **Behavior**: Pauses execution for `X` milliseconds.  
+  **Pseudo-behavior**: `sleep_in_milliseconds( X )`
 

@@ -54,6 +54,8 @@ pub enum Opcode {
 
     Muld,
     Divd,
+    Mull,
+    Divl,
 
     Sleepd,
     Sleepi,
@@ -123,6 +125,8 @@ impl Opcode {
 
             "MULD" => Opcode::Muld,
             "DIVD" => Opcode::Divd,
+            "MULL" => Opcode::Mull,
+            "DIVL" => Opcode::Divl,
 
             "SLEEPD" => Opcode::Sleepd,
             "SLEEPI" => Opcode::Sleepi,

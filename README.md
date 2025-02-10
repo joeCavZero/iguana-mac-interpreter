@@ -135,14 +135,6 @@ output:
   **Behavior**: Subtracts the value at address `X` in the stack from the accumulator (`ac`).  
   **Pseudo-behavior**: `ac = ac - M[X]`
 
-- **ADDL X**  
-  **Behavior**: Adds a value from the stack relative to the stack pointer (`sp`) to the accumulator (`ac`).  
-  **Pseudo-behavior**: `ac = ac + M[sp - X]`
-
-- **SUBL X**  
-  **Behavior**: Subtracts a value from the stack relative to the stack pointer (`sp`) from the accumulator (`ac`).  
-  **Pseudo-behavior**: `ac = ac - M[sp - X]`
-
 - **MULD X**  
   **Behavior**: Multiplies the value in the accumulator (`ac`) by the value at address `X` in the stack.  
   **Pseudo-behavior**: `ac = ac * M[X]`
@@ -150,6 +142,22 @@ output:
 - **DIVD X**  
   **Behavior**: Divides the value in the accumulator (`ac`) by the value at address `X` in the stack.  
   **Pseudo-behavior**: `ac = ac / M[X]`
+
+- **ADDL X**  
+  **Behavior**: Adds a value from the stack relative to the stack pointer (`sp`) to the accumulator (`ac`).  
+  **Pseudo-behavior**: `ac = ac + M[sp + X]`
+
+- **SUBL X**  
+  **Behavior**: Subtracts a value from the stack relative to the stack pointer (`sp`) from the accumulator (`ac`).  
+  **Pseudo-behavior**: `ac = ac - M[sp + X]`
+
+- **MULL X**  
+  **Behavior**: Multiplies a value from the stack relative to the stack pointer (`sp`) to the accumulator (`ac`).  
+  **Pseudo-behavior**: `ac = ac * M[sp + X]`
+
+- **DIVL X**  
+  **Behavior**: Divides a value from the stack relative to the stack pointer (`sp`) from the accumulator (`ac`).  
+  **Pseudo-behavior**: `ac = ac / M[sp + X]`
 
 ---
 

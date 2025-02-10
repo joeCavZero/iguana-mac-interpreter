@@ -486,13 +486,13 @@ impl VirtualMachine {
                                                                         token_counter += 2;
                                                                     },
                                                                     Err(_) => {
-                                                                        logkit::exit_with_positional_error_message("Expected a label or a valid value after call", actual_raw_token.line, actual_raw_token.col);
+                                                                        logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", actual_raw_token.line, actual_raw_token.col);
                                                                     }
                                                                 }
                                                             }
                                                         },
                                                         None => {
-                                                            logkit::exit_with_positional_error_message("Expected a label or a value after call", actual_raw_token.line, actual_raw_token.col);
+                                                            logkit::exit_with_positional_error_message("Expected a label or a value after instruction", actual_raw_token.line, actual_raw_token.col);
                                                         }
                                                     }
                                                 
@@ -659,7 +659,7 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Addl => {
-                            match self.stack.get((self.sp as i64 - instruction.arg as i64) as usize) {
+                            match self.stack.get((self.sp as i64 + instruction.arg as i64) as usize) {
                                 Some(value) => {
                                     let aux_option = self.ac.checked_add(*value);
                                     match aux_option {
@@ -672,13 +672,13 @@ impl VirtualMachine {
                                     }
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp as i64 + instruction.arg as i64 ).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;
                         },
                         Opcode::Subl => {
-                            match self.stack.get((self.sp as i64 - instruction.arg as i64) as usize) {
+                            match self.stack.get((self.sp as i64 + instruction.arg as i64) as usize) {
                                 Some(value) => {
                                     let aux_option = self.ac.checked_sub(*value);
                                     match aux_option {
@@ -691,7 +691,7 @@ impl VirtualMachine {
                                     }
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp as i64 + instruction.arg as i64).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;
@@ -1122,6 +1122,47 @@ impl VirtualMachine {
                             }
                             self.pc += 1;
                         },
+
+                        Opcode::Mull => {
+                            match self.stack.get((self.sp as i64 + instruction.arg as i64) as usize) {
+                                Some(value) => {
+                                    let aux_option = self.ac.checked_mul(*value);
+                                    match aux_option {
+                                        Some(aux) => {
+                                            self.ac = aux;
+                                        },
+                                        None => {
+                                            logkit::exit_with_positional_error_message("Value range exceeded (-32768...32767)", instruction.line, instruction.col);
+                                        }
+                                    }
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp as i64 + instruction.arg as i64 ).as_str(), instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+
+                        Opcode::Divl => {
+                            match self.stack.get((self.sp as i64 + instruction.arg as i64) as usize) {
+                                Some(value) => {
+                                    let aux_option = self.ac.checked_div(*value);
+                                    match aux_option {
+                                        Some(aux) => {
+                                            self.ac = aux;
+                                        },
+                                        None => {
+                                            logkit::exit_with_positional_error_message("Value range exceeded (-32768...32767)", instruction.line, instruction.col);
+                                        }
+                                    }
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp as i64 + instruction.arg as i64).as_str(), instruction.line, instruction.col);
+                                }
+                            }
+                            self.pc += 1;
+                        },
+
                         Opcode::Sleepd => {
                             match self.stack.get(instruction.arg as usize) {
                                 Some(value) => {

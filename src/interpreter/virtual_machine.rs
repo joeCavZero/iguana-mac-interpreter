@@ -594,13 +594,29 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Jpos => {
-                            if self.ac > 0 {
+
+                            compare_instruction_out_of_bounds(
+                                instruction.arg,
+                                self.memory.len() as u32,
+                                instruction.line,
+                                instruction.col,
+                            );
+
+                            if self.ac >= 0 {
                                 self.pc = instruction.arg as u32;
                             } else {
                                 self.pc += 1;
                             }
                         },
                         Opcode::Jzer => {
+
+                            compare_instruction_out_of_bounds(
+                                instruction.arg,
+                                self.memory.len() as u32,
+                                instruction.line,
+                                instruction.col,
+                            );
+
                             if self.ac == 0 {
                                 self.pc = instruction.arg as u32;
                             } else {
@@ -608,6 +624,14 @@ impl VirtualMachine {
                             }
                         },
                         Opcode::Jump => {
+
+                            compare_instruction_out_of_bounds(
+                                instruction.arg,
+                                self.memory.len() as u32,
+                                instruction.line,
+                                instruction.col,
+                            );
+
                             self.pc = instruction.arg as u32;
                         },
                         Opcode::Loco => {
@@ -673,6 +697,14 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Jneg => {
+
+                            compare_instruction_out_of_bounds(
+                                instruction.arg,
+                                self.memory.len() as u32,
+                                instruction.line,
+                                instruction.col,
+                            );
+
                             if self.ac < 0 {
                                 self.pc = instruction.arg as u32;
                             } else {
@@ -680,6 +712,14 @@ impl VirtualMachine {
                             }
                         },
                         Opcode::Jnze => {
+
+                            compare_instruction_out_of_bounds(
+                                instruction.arg,
+                                self.memory.len() as u32,
+                                instruction.line,
+                                instruction.col,
+                            );
+
                             if self.ac != 0 {
                                 self.pc = instruction.arg as u32;
                             } else {
@@ -687,6 +727,14 @@ impl VirtualMachine {
                             }
                         },
                         Opcode::Call => {
+
+                            compare_instruction_out_of_bounds(
+                                instruction.arg,
+                                self.memory.len() as u32,
+                                instruction.line,
+                                instruction.col,
+                            );
+
                             self.sp -= 1; // incrementa o sp
                             match self.set_stack_value(self.sp as i64, self.pc as i16) {
                                 Ok(_) => {},
@@ -1154,4 +1202,10 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize) -> Vec<i16> {
         }
     }
     values
+}
+
+fn compare_instruction_out_of_bounds(value: i16, max: u32, line: u32, col: u32) {
+    if value < 0 || value >= max as i16 {
+        logkit::exit_with_positional_error_message(format!("Control flow value out of bounds (0...{})", max).as_str(), line, col);
+    }
 }

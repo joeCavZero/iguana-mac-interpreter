@@ -157,7 +157,7 @@ output:
 
 - **JPOS X**  
   **Behavior**: Jumps to address `X` if the accumulator (`ac`) is positive.  
-  **Pseudo-behavior**: `if ac > 0: pc = X`
+  **Pseudo-behavior**: `if ac >= 0: pc = X`
 
 - **JZER X**  
   **Behavior**: Jumps to address `X` if the accumulator (`ac`) is zero.  

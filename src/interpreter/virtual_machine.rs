@@ -389,12 +389,19 @@ impl VirtualMachine {
                                                      *      válida
                                                      */
                                                     continue;
+                                                } else if next_raw_token.is_label() {
+                                                    self.symbol_table.insert(
+                                                        label,
+                                                        memory_label_counter,
+                                                    );
+                                                    token_counter += 1;
+                                                    continue;
                                                 } else {
                                                     logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
                                                 }
                                             },
                                             None => {
-                                                logkit::exit_with_positional_error_message("---> Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
+                                                logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
                                             }
                                         }
                                     } else {

@@ -65,6 +65,7 @@ impl VirtualMachine {
         for i in ((self.sp as usize) .. STACK_SIZE).rev() {
             println!("Stack[{}]: {}", i, self.stack[i]);
         }
+        println!("=======================");
     }
 
     fn print_symbol_table(&self) {
@@ -743,7 +744,7 @@ impl VirtualMachine {
                             );
 
                             self.sp -= 1; // incrementa o sp
-                            match self.set_stack_value(self.sp as i64, self.pc as i16) {
+                            match self.set_stack_value(self.sp as i64, ( self.pc + 1 ) as i16) {
                                 Ok(_) => {},
                                 Err(_) => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);

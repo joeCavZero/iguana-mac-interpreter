@@ -63,7 +63,7 @@ output:
 4. **Locate the generated binary**:
    - After the build is complete, the binary will be located at:
      ```bash
-     ./target/release/iguana
+     ./target/release/iguana.exe ( or iguana.app on MacOS or iguana on Linux )
      ```
 
 
@@ -185,7 +185,7 @@ output:
 
 - **CALL X**  
   **Behavior**: Calls a subroutine at address `X`, saving the return address on the stack.  
-  **Pseudo-behavior**: `sp = sp - 1; M[sp] = pc; pc = X`
+  **Pseudo-behavior**: `sp = sp - 1; M[sp] = pc + 1; pc = X`
 
 - **RETN**  
   **Behavior**: Returns from a subroutine by popping the return address from the stack.  

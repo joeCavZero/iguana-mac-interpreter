@@ -63,7 +63,8 @@ output:
 4. **Locate the generated binary**:
    - After the build is complete, the binary will be located at:
      ```bash
-     ./target/release/iguana.exe ( or iguana.app on MacOS or iguana on Linux )
+     ./target/release/iguana.exe on Windows 
+     ( or iguana.app on MacOS or iguana on Linux )
      ```
 
 
@@ -89,11 +90,11 @@ output:
 
 - **LODL X**  
   **Behavior**: Loads a value from the stack relative to the stack pointer (`sp`) into the accumulator (`ac`).  
-  **Pseudo-behavior**: `ac = M[sp - X]`
+  **Pseudo-behavior**: `ac = M[sp + X]`
 
 - **STOL X**  
   **Behavior**: Stores the value in the accumulator (`ac`) into the stack relative to the stack pointer (`sp`).  
-  **Pseudo-behavior**: `M[sp - X] = ac`
+  **Pseudo-behavior**: `M[sp + X] = ac`
 
 - **PSHI**  
   **Behavior**: Pushes the value in the accumulator (`ac`) onto the stack.  
@@ -269,7 +270,7 @@ output:
 
 - **PRINTLNTOPD X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) with a line break.  
-  **Pseudo-behavior**: `print( M[sp - X] + '\n' )`
+  **Pseudo-behavior**: `print( M[sp + X] + '\n' )`
 
 - **PRINTTOPI X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`).  
@@ -277,7 +278,7 @@ output:
 
 - **PRINTTOPD X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`).  
-  **Pseudo-behavior**: `print( M[sp - X] )`
+  **Pseudo-behavior**: `print( M[sp + X] )`
 
 - **PRINTLNACCHAR**  
   **Behavior**: Prints the value in the accumulator (`ac`) as a character with a line break.  
@@ -293,7 +294,7 @@ output:
 
 - **PRINTLNTOPCHARD X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character with a line break.  
-  **Pseudo-behavior**: `print( char(M[sp - X]) + '\n' )`
+  **Pseudo-behavior**: `print( char(M[sp + X]) + '\n' )`
 
 - **PRINTTOPCHARI X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character.  
@@ -301,7 +302,7 @@ output:
 
 - **PRINTTOPCHARD X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character.  
-  **Pseudo-behavior**: `print( char(M[sp - X]) )`
+  **Pseudo-behavior**: `print( char(M[sp + X]) )`
 
 ---
 

@@ -647,7 +647,7 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Lodl => {
-                            match self.stack.get((self.sp as i64 - instruction.arg as i64) as usize) {
+                            match self.stack.get((self.sp as i64 + instruction.arg as i64) as usize) {
                                 Some(value) => {
                                     self.ac = *value;
                                 },
@@ -658,7 +658,7 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Stol => {
-                            match self.set_stack_value(self.sp as i64 - instruction.arg as i64, self.ac) {
+                            match self.set_stack_value(self.sp as i64 + instruction.arg as i64, self.ac) {
                                 Ok(_) => {},
                                 Err(_) => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
@@ -834,10 +834,14 @@ impl VirtualMachine {
                                     logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
                                 }
                             }
+
+                            if self.sp as usize >= STACK_SIZE {
+                                logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
+                            }
+
                             self.pc += 1;
                         },
                         Opcode::Desp => {
-                            //self.sp += instruction.arg as u32;
                             match self.sp.checked_add(instruction.arg as u32) {
                                 Some(aux) => {
                                     self.sp = aux;
@@ -846,9 +850,11 @@ impl VirtualMachine {
                                     logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
                                 }
                             }
+
                             if self.sp as usize >= STACK_SIZE {
                                 logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
                             }
+
                             self.pc += 1;
                         },
                         
@@ -874,52 +880,112 @@ impl VirtualMachine {
                         }
 
                         Opcode::Printlntopi => {
-                            match self.stack.get(self.sp as usize + instruction.arg as usize) {
+                            let address_found = self.sp as i64 + instruction.arg as i64;
+                            if address_found < 0 || address_found >= STACK_SIZE as i64 {
+                                logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_found).as_str(), instruction.line, instruction.col);
+                            }
+
+                            match self.stack.get(address_found as usize) {
                                 Some(value) => {
-                                    println!("{}", value);
+                                    println!("{}", *value);
                                     io::stdout().flush().unwrap();
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_found).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
                             self.pc += 1;
                         },
                         Opcode::Printlntopd => {
-                            match self.stack.get(self.sp as usize - instruction.arg as usize) {
-                                Some(value) => {
-                                    println!("{}", value);
-                                    io::stdout().flush().unwrap();
+
+                            if instruction.arg < 0 {
+                                logkit::exit_with_positional_error_message("Negative address", instruction.line, instruction.col);
+                            }
+                            let address_of_value = self.sp as i64 + instruction.arg as i64;
+                            if address_of_value < 0 || address_of_value >= STACK_SIZE as i64 {
+                                logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_of_value).as_str(), instruction.line, instruction.col);
+                            }
+
+                            match self.stack.get(address_of_value as usize) {
+                                Some(address_value) => {
+
+                                    match self.sp.checked_add( *address_value as u32 ) {
+                                        Some(address) => {
+                                            match self.stack.get( address as usize ) {
+                                                Some(value) => {
+                                                    println!("{}", *value);
+                                                    io::stdout().flush().unwrap();
+                                                },
+                                                None => {
+                                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address).as_str(), instruction.line, instruction.col);
+                                                }
+                                            }
+                                        },
+                                        None => {
+                                            logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                        }
+                                    }
+
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
                             self.pc += 1;
                         },
                         Opcode::Printtopi => {
-                            match self.stack.get(self.sp as usize + instruction.arg as usize) {
+                            let address_found = self.sp as i64 + instruction.arg as i64;
+                            if address_found < 0 || address_found >= STACK_SIZE as i64 {
+                                logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_found).as_str(), instruction.line, instruction.col);
+                            }
+
+                            match self.stack.get(address_found as usize) {
                                 Some(value) => {
                                     print!("{}", value);
                                     io::stdout().flush().unwrap();
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_found).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
                             self.pc += 1;
                         }
                         Opcode::Printtopd => {
-                            match self.stack.get(self.sp as usize - instruction.arg as usize) {
-                                Some(value) => {
-                                    print!("{}", value);
-                                    io::stdout().flush().unwrap();
+                            if instruction.arg < 0 {
+                                logkit::exit_with_positional_error_message("Negative address", instruction.line, instruction.col);
+                            }
+                            
+                            let address_of_value = self.sp as i64 + instruction.arg as i64;
+                            if address_of_value < 0 || address_of_value >= STACK_SIZE as i64 {
+                                logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_of_value).as_str(), instruction.line, instruction.col);
+                            }
+
+                            match self.stack.get( address_of_value as usize ) {
+                                Some(address_value) => {
+
+                                    match self.sp.checked_add( *address_value as u32 ) {
+                                        Some(address) => {
+                                            match self.stack.get( address as usize ) {
+                                                Some(value) => {
+                                                    print!("{}", value);
+                                                    io::stdout().flush().unwrap();
+                                                },
+                                                None => {
+                                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address).as_str(), instruction.line, instruction.col);
+                                                }
+                                            }
+                                        },
+                                        None => {
+                                            logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                        }
+                                    }
+
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
@@ -938,13 +1004,18 @@ impl VirtualMachine {
                         }
 
                         Opcode::Printlntopchari => {
-                            match self.stack.get(self.sp as usize + instruction.arg as usize) {
+                            let address_found = self.sp as i64 + instruction.arg as i64;
+                            if address_found < 0 || address_found >= STACK_SIZE as i64 {
+                                logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_found).as_str(), instruction.line, instruction.col);
+                            }
+
+                            match self.stack.get(address_found as usize) {
                                 Some(value) => {
                                     println!("{}", *value as u8 as char);
                                     io::stdout().flush().unwrap();
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_found).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
@@ -952,42 +1023,97 @@ impl VirtualMachine {
                         }
 
                         Opcode::Printlntopchard => {
-                            match self.stack.get(self.sp as usize - instruction.arg as usize) {
-                                Some(value) => {
-                                    println!("{}", *value as u8 as char);
-                                    io::stdout().flush().unwrap();
-                                },
-                                None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
-                                }
+                            if instruction.arg < 0 {
+                                logkit::exit_with_positional_error_message("Negative address", instruction.line, instruction.col);
                             }
 
+                            let address_of_value = self.sp as i64 + instruction.arg as i64;
+                            if address_of_value < 0 || address_of_value >= STACK_SIZE as i64 {
+                                logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_of_value).as_str(), instruction.line, instruction.col);
+                            }
+
+                            match self.stack.get(address_of_value as usize) {
+                                Some(address_value) => {
+
+                                    match self.sp.checked_add( *address_value as u32 ) {
+                                        Some(address) => {
+                                            match self.stack.get( address as usize ) {
+                                                Some(value) => {
+                                                    println!("{}", *value as u8 as char);
+                                                    io::stdout().flush().unwrap();
+                                                },
+                                                None => {
+                                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address).as_str(), instruction.line, instruction.col);
+                                                }
+                                            }
+                                        },
+                                        None => {
+                                            logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                        }
+                                    }
+
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
+                            }
+                            
                             self.pc += 1;
                         }
                         Opcode::Printtopchari => {
-                            match self.stack.get(self.sp as usize + instruction.arg as usize) {
+
+                            let address_found = self.sp as i64 + instruction.arg as i64;
+                            if address_found < 0 || address_found >= STACK_SIZE as i64 {
+                                logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_found).as_str(), instruction.line, instruction.col);
+                            }
+
+                            match self.stack.get(address_found as usize) {
                                 Some(value) => {
                                     print!("{}", *value as u8 as char);
                                     io::stdout().flush().unwrap();
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_found).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
                             self.pc += 1;
                         }
                         Opcode::Printtopchard => {
-                            match self.stack.get(self.sp as usize - instruction.arg as usize) {
-                                Some(value) => {
-                                    print!("{}", *value as u8 as char);
-                                    io::stdout().flush().unwrap();
-                                },
-                                None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
-                                }
+                            if instruction.arg < 0 {
+                                logkit::exit_with_positional_error_message("Negative address", instruction.line, instruction.col);
+                            }
+                            
+                            let address_of_value = self.sp as i64 + instruction.arg as i64;
+                            if address_of_value < 0 || address_of_value >= STACK_SIZE as i64 {
+                                logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_of_value).as_str(), instruction.line, instruction.col);
                             }
 
+                            match self.stack.get( address_of_value as usize ) {
+                                Some(address_value) => {
+
+                                    match self.sp.checked_add( *address_value as u32 ) {
+                                        Some(address) => {
+                                            match self.stack.get( address as usize ) {
+                                                Some(value) => {
+                                                    print!("{}", *value as u8 as char);
+                                                    io::stdout().flush().unwrap();
+                                                },
+                                                None => {
+                                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address).as_str(), instruction.line, instruction.col);
+                                                }
+                                            }
+                                        },
+                                        None => {
+                                            logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                        }
+                                    }
+
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
+                            }
                             self.pc += 1;
                         },
 

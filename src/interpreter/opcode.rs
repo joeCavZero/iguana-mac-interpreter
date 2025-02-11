@@ -66,7 +66,7 @@ pub enum Opcode {
 impl Opcode {
     pub fn is_argumented(op: Opcode) -> bool {
         match op {
-            Opcode::Pshi | Opcode::Popi | Opcode::Push | Opcode::Pop | Opcode::Retn | Opcode::Swap | Opcode::Insp | Opcode::Desp | Opcode::Halt |
+            Opcode::Pshi | Opcode::Popi | Opcode::Push | Opcode::Pop | Opcode::Retn | Opcode::Swap | Opcode::Halt |
             Opcode::Printlnac | Opcode::Printac | Opcode::Printlnacchar | Opcode::Printacchar    | Opcode::Printsp | Opcode::Printlnsp
                 => false,
             _

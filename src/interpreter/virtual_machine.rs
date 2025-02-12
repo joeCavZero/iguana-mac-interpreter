@@ -1364,6 +1364,28 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize) -> Vec<i16> {
                         if aux_raw_token.is_char_literal() {
                             values.push(aux_raw_token.to_char_literal() as i16);
                             aux_value_counter += 1;
+                        } else if aux_raw_token.is_hex_literal() {
+                            let value_option = aux_raw_token.to_hex_literal();
+                            match value_option {
+                                Some(value) => {
+                                    values.push(value);
+                                    aux_value_counter += 1;
+                                },
+                                None => {
+                                    break 'aux_value_counter_loop;
+                                }
+                            }
+                        } else if aux_raw_token.is_binary_literal() {
+                            let value_option = aux_raw_token.to_binary_literal();
+                            match value_option {
+                                Some(value) => {
+                                    values.push(value);
+                                    aux_value_counter += 1;
+                                },
+                                None => {
+                                    break 'aux_value_counter_loop;
+                                }
+                            }
                         } else {
                             let value = aux_raw_token.get_token().parse::<i16>();
                             match value {

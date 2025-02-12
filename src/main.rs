@@ -12,7 +12,7 @@ fn main() {
         2 => {
             if args[1] == "info" {
                 logkit::message("Iguana MAC Interpreter");
-                logkit::message("Version: 0.1.0");
+                logkit::message("Version: 0.1.1");
                 logkit::message("Developed by: github.com/joeCavZero");
             } else {
                 logkit::message_compatible_expected_program_arguments(&args[1]);

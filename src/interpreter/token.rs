@@ -122,4 +122,94 @@ impl Token {
     
         Some(processed_string)
     }
+
+    pub fn is_hex_literal(&self) -> bool {
+        self.token.len() >= 3 && self.token.chars().nth(0) == Some('0') && self.token.chars().nth(1) == Some('x')
+    }
+
+    pub fn to_hex_literal(&self) -> Option<i16> {// if hex_number >= i16::MAX then None 
+        let hex_string = self.token.clone();
+        let mut hex_number: i16 = 0;
+        let mut hex_counter = 2;
+        while hex_counter < hex_string.len() {
+            let hex_digit = match hex_string.chars().nth(hex_counter) {
+                Some('0') => 0,
+                Some('1') => 1,
+                Some('2') => 2,
+                Some('3') => 3,
+                Some('4') => 4,
+                Some('5') => 5,
+                Some('6') => 6,
+                Some('7') => 7,
+                Some('8') => 8,
+                Some('9') => 9,
+                Some('a') | Some('A') => 10,
+                Some('b') | Some('B') => 11,
+                Some('c') | Some('C') => 12,
+                Some('d') | Some('D') => 13,
+                Some('e') | Some('E') => 14,
+                Some('f') | Some('F') => 15,
+                _ => {
+                    logkit::exit_with_positional_error_message("Invalid hexadecimal literal", self.line, self.col);
+                    return None;
+                }
+            };
+            // its like: hex_number = hex_number * 16 + hex_digit;
+            match hex_number.checked_mul(16) {
+                Some(result) => {
+                    match result.checked_add(hex_digit) {
+                        Some(result) => hex_number = result,
+                        None => {
+                            logkit::exit_with_positional_error_message("Hexadecimal literal overflow", self.line, self.col);
+                            return None;
+                        }
+                    }
+                }
+                None => {
+                    logkit::exit_with_positional_error_message("Hexadecimal literal overflow", self.line, self.col);
+                    return None;
+                }
+            }
+            hex_counter += 1;
+        }
+        Some(hex_number)
+
+    }
+    pub fn is_binary_literal(&self) -> bool {
+        self.token.len() >= 3 && self.token.chars().nth(0) == Some('0') && self.token.chars().nth(1) == Some('b')
+    }
+
+    pub fn to_binary_literal(&self) -> Option<i16> {// if binary_number >= i16::MAX then None 
+        let binary_string = self.token.clone();
+        let mut binary_number: i16 = 0;
+        let mut binary_counter = 2;
+        while binary_counter < binary_string.len() {
+            let binary_digit = match binary_string.chars().nth(binary_counter) {
+                Some('0') => 0,
+                Some('1') => 1,
+                _ => {
+                    logkit::exit_with_positional_error_message("Invalid binary literal", self.line, self.col);
+                    return None;
+                }
+            };
+            //its like: binary_number = binary_number * 2 + binary_digit;
+            match binary_number.checked_mul(2) {
+                Some(result) => {
+                    match result.checked_add(binary_digit) {
+                        Some(result) => binary_number = result,
+                        None => {
+                            logkit::exit_with_positional_error_message("Binary literal overflow", self.line, self.col);
+                            return None;
+                        }
+                    }
+                }
+                None => {
+                    logkit::exit_with_positional_error_message("Binary literal overflow", self.line, self.col);
+                    return None;
+                }
+            }
+            binary_counter += 1;
+        }
+        Some(binary_number)
+    }
 }

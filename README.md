@@ -143,8 +143,6 @@ iguana info
   **Behavior**: Decrements the stack pointer (`sp`) by `X`.  
   **Pseudo-behavior**: `sp = sp + X`
 
----
-
 ## Arithmetic Operations
 
 - **ADDD X**  
@@ -179,8 +177,6 @@ iguana info
   **Behavior**: Divides a value from the stack relative to the stack pointer (`sp`) from the accumulator (`ac`).  
   **Pseudo-behavior**: `ac = ac / M[sp + X]`
 
----
-
 ## Control Flow Operations
 
 - **JPOS X**  
@@ -210,8 +206,6 @@ iguana info
 - **RETN**  
   **Behavior**: Returns from a subroutine by popping the return address from the stack.  
   **Pseudo-behavior**: `pc = M[sp]; sp = sp + 1`
-
----
 
 ## Bitwise Operations
 
@@ -262,8 +256,6 @@ iguana info
 - **SHFLD X**  
   **Behavior**: Shifts the value in the accumulator (`ac`) left by the value at address `X` in the stack.  
   **Pseudo-behavior**: `ac = ac << M[X]`
-
----
 
 ## Debug Operations
 
@@ -322,8 +314,6 @@ iguana info
 - **PRINTTOPCHARD X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character.  
   **Pseudo-behavior**: `print( char(M[sp + X]) )`
-
----
 
 ## Custom Operations
 

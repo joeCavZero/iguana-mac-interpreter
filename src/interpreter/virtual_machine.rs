@@ -580,7 +580,8 @@ impl VirtualMachine {
                                 }
                             }
                             self.pc += 1;
-                        },    Opcode::Subd => {
+                        },    
+                        Opcode::Subd => {
                             match self.stack.get(instruction.arg as usize) {
                                 Some(value) => {
                                     if *value != 0 {
@@ -652,7 +653,7 @@ impl VirtualMachine {
                                     self.ac = *value;
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp as i64 + instruction.arg as i64).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;
@@ -661,7 +662,7 @@ impl VirtualMachine {
                             match self.set_stack_value(self.sp as i64 + instruction.arg as i64, self.ac) {
                                 Ok(_) => {},
                                 Err(_) => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp as i64 + instruction.arg as i64).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;
@@ -743,7 +744,15 @@ impl VirtualMachine {
                                 instruction.col,
                             );
 
-                            self.sp -= 1; // incrementa o sp
+                            match self.sp.checked_sub(1) {
+                                Some(aux) => {
+                                    self.sp = aux;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
+                                }
+                            }
+
                             match self.set_stack_value(self.sp as i64, ( self.pc + 1 ) as i16) {
                                 Ok(_) => {},
                                 Err(_) => {
@@ -753,8 +762,14 @@ impl VirtualMachine {
                             self.pc = instruction.arg as u32;
                         },
                         Opcode::Pshi => {
-                            self.sp -= 1; // incrementa o sp
-
+                            match self.sp.checked_sub(1) {
+                                Some(aux) => {
+                                    self.sp = aux;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
+                                }
+                            }
                             let aux = match self.stack.get(self.ac as usize) {
                                 Some(value) => *value,
                                 None => {
@@ -789,7 +804,14 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Push => {
-                            self.sp -= 1; // incrementa o sp
+                            match self.sp.checked_sub(1) {
+                                Some(aux) => {
+                                    self.sp = aux;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
+                                }
+                            }
                             match self.set_stack_value(self.sp as i64, self.ac) {
                                 Ok(_) => {},
                                 Err(_) => {
@@ -923,13 +945,13 @@ impl VirtualMachine {
                                             }
                                         },
                                         None => {
-                                            logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                            logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_of_value).as_str(), instruction.line, instruction.col);
                                         }
                                     }
 
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_of_value).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
@@ -979,13 +1001,13 @@ impl VirtualMachine {
                                             }
                                         },
                                         None => {
-                                            logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                            logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_of_value ).as_str(), instruction.line, instruction.col);
                                         }
                                     }
 
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_of_value).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
@@ -1048,13 +1070,13 @@ impl VirtualMachine {
                                             }
                                         },
                                         None => {
-                                            logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                            logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_of_value).as_str(), instruction.line, instruction.col);
                                         }
                                     }
 
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_of_value).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             
@@ -1105,13 +1127,13 @@ impl VirtualMachine {
                                             }
                                         },
                                         None => {
-                                            logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                            logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_of_value).as_str(), instruction.line, instruction.col);
                                         }
                                     }
 
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_of_value).as_str(), instruction.line, instruction.col);
                                 }
                             }
                             self.pc += 1;

@@ -7,7 +7,9 @@
 
 A simple 16-bit stack-based assembly interpreter for Andrew S. Tanenbaum's MAC assembly language. The interpreter is written in Rust and supports a variety of operations, including arithmetic, memory, control flow, bitwise, and debug operations.
 
-## Example Assembly Code
+---
+
+# Example Assembly Code
 
 The following example finds the largest of two values:
 
@@ -42,6 +44,23 @@ output:
 ```
 257
 ```
+
+---
+
+# Usage Instructions
+## Running a File
+To run a assembly file, use the following command:
+```bash	
+iguana run <file>
+```
+
+## Display Interpreter Informations
+To display the interpreter information, use the following command:
+```bash
+iguana info
+```
+
+---
 
 # Build Instructions
 

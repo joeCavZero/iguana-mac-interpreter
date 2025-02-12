@@ -5,7 +5,7 @@
 <h1 align="center">IGUANA MAC INTERPRETER</h1>
 
 
-An interpreter for Andrew S. Tanenbaum's MAC assembly.
+A simple 16-bit stack-based assembly interpreter for Andrew S. Tanenbaum's MAC assembly language. The interpreter is written in Rust and supports a variety of operations, including arithmetic, memory, control flow, bitwise, and debug operations.
 
 ## Example Assembly Code
 

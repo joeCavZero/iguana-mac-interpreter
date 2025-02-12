@@ -2,7 +2,7 @@
 # JUMPs, JZERs, etc... are used to jump based on operation indexes
 # and not text editor line numbers
 .data
-STRING: .asciiz "JOAO"
+STRING: .asciiz "John"
 AUX: .word 0
 
 ONE: .word 1

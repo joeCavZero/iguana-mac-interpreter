@@ -87,14 +87,14 @@ impl VirtualMachine {
     fn print_tokens(&self, tokens: &Vec<Token>) {
         println!("======== Tokens ========");
         for i in 0..tokens.len() {
-            println!("{} --> {}", i, tokens[i].get_token());
+            println!("{} --> {:?}", i, tokens[i]);
         }
         println!("=======================");
     }
     
     fn tokenize(&mut self) -> Vec<Token> {
         let raw_content = match std::fs::read_to_string(&self.file_path) {
-            Ok(content) => content.replace("\r", ""),
+            Ok(content) => content.replace("\r", "").replace("\t", " "),
             Err(_) => {
                 logkit::exit_with_error_message("Error reading file");
                 String::new()

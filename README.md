@@ -221,9 +221,9 @@ iguana info
   **Behavior**: Performs a bitwise XOR between the accumulator (`ac`) and the constant `X`.  
   **Pseudo-behavior**: `ac = ac ^ X`
 
-- **NOTI X**  
-  **Behavior**: Performs a bitwise NOT on the constant `X` and stores the result in the accumulator (`ac`).  
-  **Pseudo-behavior**: `ac = ~X`
+- **NOT**  
+  **Behavior**: Performs a bitwise NOT on the accumulator (`ac`).  
+  **Pseudo-behavior**: `ac = ~ac`
 
 - **SHFLI X**  
   **Behavior**: Shifts the value in the accumulator (`ac`) left by `X` bits.  

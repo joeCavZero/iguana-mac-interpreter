@@ -1163,8 +1163,8 @@ impl VirtualMachine {
                             self.ac = self.ac ^ instruction.arg;  
                             self.pc += 1;
                         },
-                        Opcode::Noti => {
-                            self.ac = !instruction.arg;
+                        Opcode::Not => {
+                            self.ac = !self.ac;
                             self.pc += 1;  
                         },
                         Opcode::Shfli => {

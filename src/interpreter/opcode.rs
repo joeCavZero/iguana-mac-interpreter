@@ -41,7 +41,7 @@ pub enum Opcode {
     Andi,
     Ori,
     Xori,
-    Noti,
+    Not,
     Shfli,
     Shfri,
 
@@ -67,6 +67,7 @@ impl Opcode {
     pub fn is_argumented(op: Opcode) -> bool {
         match op {
             Opcode::Pshi | Opcode::Popi | Opcode::Push | Opcode::Pop | Opcode::Retn | Opcode::Swap | Opcode::Halt |
+            Opcode::Not |
             Opcode::Printlnac | Opcode::Printac | Opcode::Printlnacchar | Opcode::Printacchar    | Opcode::Printsp | Opcode::Printlnsp
                 => false,
             _
@@ -112,7 +113,7 @@ impl Opcode {
             "ANDI" => Opcode::Andi, 
             "ORI" => Opcode::Ori,
             "XORI" => Opcode::Xori,
-            "NOTI" => Opcode::Noti,
+            "NOT" => Opcode::Not,
             "SHFLI" => Opcode::Shfli,
             "SHFRI" => Opcode::Shfri,
 

@@ -64,7 +64,7 @@ impl Token {
     }
 
     pub fn is_label(&self) -> bool {
-        self.token.chars().nth(self.token.len()-1) == Some(':')
+        self.token.chars().nth(self.token.len()-1) == Some(':') && self.token.len() >= 2 && !self.token.chars().nth(0).unwrap().is_digit(10) && self.token.chars().nth(0).unwrap().is_alphabetic()
     }
 
     pub fn to_string_literal(&self) -> Option<String> {

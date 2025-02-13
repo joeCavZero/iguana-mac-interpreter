@@ -356,7 +356,7 @@ impl VirtualMachine {
                                 
                                         }
                                     } else {
-                                        logkit::exit_with_positional_error_message("Expected a label or a valid value after comma", actual_raw_token.line, actual_raw_token.col);
+                                        logkit::exit_with_positional_error_message("Expected a valid label or a valid value after comma", actual_raw_token.line, actual_raw_token.col);
                                     }
                                 },
                                 Section::Text => {

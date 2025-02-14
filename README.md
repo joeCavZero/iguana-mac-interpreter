@@ -277,39 +277,39 @@ iguana info
 
 - **PRINTLNTOPI X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) with a line break.  
-  **Pseudo-behavior**: `print( M[sp + X] + '\n' )`
+  **Pseudo-behavior**: `print( M[ sp + X ] + '\n' )`
 
 - **PRINTLNTOPD X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) with a line break.  
-  **Pseudo-behavior**: `print( M[sp + M[X] ] + '\n' )`
+  **Pseudo-behavior**: `print( M[ sp + M[X] ] + '\n' )`
 
 - **PRINTTOPI X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`).  
-  **Pseudo-behavior**: `print( M[sp + X] )`
+  **Pseudo-behavior**: `print( M[ sp + X ] )`
 
 - **PRINTTOPD X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`).  
-  **Pseudo-behavior**: `print( M[sp + M[X] ] )`
+  **Pseudo-behavior**: `print( M[ sp + M[X] ] )`
 
 - **PRINTLNACCHAR**  
   **Behavior**: Prints the value in the accumulator (`ac`) as a character with a line break.  
-  **Pseudo-behavior**: `print( char(ac) + '\n' )`
+  **Pseudo-behavior**: `print( char( ac ) + '\n' )`
 
 - **PRINTACCHAR**  
   **Behavior**: Prints the value in the accumulator (`ac`) as a character.  
-  **Pseudo-behavior**: `print( char(ac) )`
+  **Pseudo-behavior**: `print( char( ac ) )`
 
 - **PRINTLNTOPCHARI X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character with a line break.  
-  **Pseudo-behavior**: `print( char(M[sp + X]) + '\n' )`
+  **Pseudo-behavior**: `print( char( M[ sp + X ] ) + '\n' )`
 
 - **PRINTLNTOPCHARD X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character with a line break.  
-  **Pseudo-behavior**: `print( char(M[sp + M[X] ]) + '\n' )`
+  **Pseudo-behavior**: `print( char( M[ sp + M[X] ] ) + '\n' )`
 
 - **PRINTTOPCHARI X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character.  
-  **Pseudo-behavior**: `print( char(M[sp + X]) )`
+  **Pseudo-behavior**: `print( char( M[ sp + X ] ) )`
 
 - **PRINTTOPCHARD X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character.  
@@ -323,7 +323,7 @@ iguana info
 
 - **SLEEPD X**  
   **Behavior**: Pauses execution for the number of milliseconds specified by the value at address `X` in the stack.  
-  **Pseudo-behavior**: `sleep_in_milliseconds( M[X] )`
+  **Pseudo-behavior**: `sleep_in_milliseconds( M[ X ] )`
 
 - **SLEEPI X**  
   **Behavior**: Pauses execution for `X` milliseconds.  

@@ -3,8 +3,9 @@
 use std::collections::HashMap;
 use std::io::{self, Write};
 
-use crate::interpreter::token::Token;
-use super::{instruction::Instruction, logkit, opcode::Opcode};
+use super::token::Token;
+use super::{instruction::Instruction, opcode::Opcode};
+use super::super::logkit;
 
 const STACK_SIZE: usize = 16384;
 

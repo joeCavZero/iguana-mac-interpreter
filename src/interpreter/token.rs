@@ -1,4 +1,4 @@
-use crate::interpreter::logkit;
+use super::super::logkit;
 
 #[derive(Debug, Clone)] 
 pub struct Token {

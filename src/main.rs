@@ -1,4 +1,5 @@
-use iguana::interpreter::{logkit, virtual_machine::VirtualMachine};
+use iguana::interpreter::virtual_machine::VirtualMachine;
+use iguana::logkit;
 
 fn main() {
     let args = std::env::args().collect::<Vec<String>>();

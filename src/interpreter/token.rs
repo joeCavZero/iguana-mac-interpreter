@@ -31,10 +31,6 @@ impl Token {
         self.token.is_empty()
     }
 
-    pub fn len(&self) -> usize {
-        self.token.len()
-    }
-
     pub fn is_string_literal(&self) -> bool {
         self.token.chars().nth(0) == Some('"') && self.token.chars().nth(self.token.len()-1) == Some('"')
     }

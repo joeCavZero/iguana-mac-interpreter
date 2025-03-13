@@ -31,7 +31,13 @@ fn error_piece() -> String {
 }
 
 fn line_col_piece(line: u32, col: u32) -> String {
-    let line_col_piece = format!("[LINE: {}, COL: {}]", line, col);
+    let line_col_piece = {
+        if col == 0 {
+            format!("[LINE: {}]", line)
+        } else {
+            format!("[LINE: {}, COL: {}]", line, col)
+        }
+    };
     if let Some(color_level) = supports_color::on(Stream::Stdout) {
         if color_level.has_16m {
             line_col_piece.bold().cyan().to_string()

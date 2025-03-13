@@ -1,5 +1,3 @@
-
-
 use std::collections::HashMap;
 use std::io::{self, Write};
 
@@ -95,7 +93,7 @@ impl VirtualMachine {
     
     fn tokenize(&mut self) -> Vec<Token> {
         let raw_content = match std::fs::read_to_string(&self.file_path) {
-            Ok(content) => content.replace("\r", "").replace("\t", " "),
+            Ok(content) => content.replace("\r", ""),
             Err(_) => {
                 logkit::exit_with_error_message("Error reading file");
                 String::new()
@@ -110,10 +108,18 @@ impl VirtualMachine {
         let mut line_counter = 1;
         let mut col_counter = 1;
         let mut escape_count = 0;
+        let mut line_has_indentation = false;
     
         for (_, c) in raw_content.chars().enumerate() {
             match c {
-                '\n' => is_comment = false,
+                '\t' => {
+                    line_has_indentation = true;
+                    continue;
+                },
+                '\n' => {
+                    is_comment = false;
+                    line_has_indentation = false;
+                },
                 '#' => is_comment = true,
                 _ => {}
             }
@@ -157,13 +163,13 @@ impl VirtualMachine {
                         is_literal_str = true;
                         raw_token.push('"');
                         raw_token.line = line_counter;
-                        raw_token.col = col_counter;
+                        raw_token.col = if line_has_indentation { 0 } else { col_counter };
                     }
                     '\'' => {
                         is_literal_char = true;
                         raw_token.push('\'');
                         raw_token.line = line_counter;
-                        raw_token.col = col_counter;
+                        raw_token.col = if line_has_indentation { 0 } else { col_counter };
                     }
                     ',' => {
                         if !raw_token.is_empty() {
@@ -173,7 +179,7 @@ impl VirtualMachine {
                         let mut comma_raw_token = Token::new();
                         comma_raw_token.push(',');
                         comma_raw_token.line = line_counter;
-                        comma_raw_token.col = col_counter;
+                        comma_raw_token.col = if line_has_indentation { 0 } else { col_counter }; 
                         tokens.push(comma_raw_token);
                     }
                     ' ' | '\n' => {
@@ -185,7 +191,7 @@ impl VirtualMachine {
                     _ => {
                         if raw_token.is_empty() {
                             raw_token.line = line_counter;
-                            raw_token.col = col_counter;
+                            raw_token.col = if line_has_indentation { 0 } else { col_counter };
                         }
                         raw_token.push(c);
                     }

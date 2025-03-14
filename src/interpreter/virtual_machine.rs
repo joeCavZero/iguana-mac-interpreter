@@ -5,7 +5,7 @@ use super::token::Token;
 use super::{instruction::Instruction, opcode::Opcode};
 use super::super::logkit;
 
-const STACK_SIZE: usize = 16384;
+const STACK_SIZE: usize = 32768;
 
 enum Section {
     Data,

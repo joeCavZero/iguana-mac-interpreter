@@ -30,6 +30,7 @@ LOOP:
     LODD VECTOR_SIZE        # ac = *VECTOR_SIZE
     SUBD INDEX              # ac = ac - *INDEX
     JZER END JNEG END       # if ac <= 0 goto END
+    JUMP LOOP
 END:
     LODD SUM                # ac = *SUM
     DIVD VECTOR_SIZE        # ac = ac / *VECTOR_SIZE

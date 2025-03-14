@@ -3,9 +3,12 @@
     STRING: .asciiz "Hi John Doe!"
     LAST_CHAR_POINTER: .word 0
     ONE: .word 1
+
+    STRING_PTR: .word 0
 .text
     LOCO STRING                     # ac = STRING as a pointer
     STOD LAST_CHAR_POINTER          # *LAST_CHAR_POINTER = STRING
+    STOD STRING_PTR                 # *STRING_PTR = STRING
 REACH_TO_LAST_CHAR_LOOP:
     LODD LAST_CHAR_POINTER          # ac = *LAST_CHAR_POINTER
     SWAP                            # sp = ac ; ac = sp
@@ -18,8 +21,9 @@ REACH_TO_LAST_CHAR_LOOP:
     JUMP REACH_TO_LAST_CHAR_LOOP    # goto REACH_TO_LAST_CHAR_LOOP
 PRINT:
     LODD LAST_CHAR_POINTER          # ac = *LAST_CHAR_POINTER
-    SUBD STRING                     # ac = ac - STRING
-    JZER END                        # if ac == 0 goto END
+    SUBD STRING_PTR                 # ac = ac - *STRING_PTR (STRING)
+    SUBD ONE                        # ac = ac + 1
+    JPOS END                        # if ac == 0 goto END
 
     LODD LAST_CHAR_POINTER          # ac = *LAST_CHAR_POINTER
     SWAP                            # sp = ac ; ac = sp

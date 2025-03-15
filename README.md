@@ -329,3 +329,24 @@ iguana info
   **Behavior**: Pauses execution for `X` milliseconds.  
   **Pseudo-behavior**: `sleep_in_milliseconds( X )`
 
+## Important Notes
+
+Here are some key details about the Iguana MAC Interpreter that you should know:
+
+### 1. **Stack Size**
+- The interpreter uses a fixed-size stack with a capacity of **32,768 items**. This means that the stack can hold up to 32,768 `i16` values at any given time.
+- Exceeding this limit will result in a **stack overflow** or **stack pointer out-of-bounds error**.
+
+### 2. **16-bit Architecture**
+- The interpreter operates on a **16-bit architecture**, meaning:
+  - The accumulator (`ac`) and all memory values are 16-bit signed integers (`i16`).
+  - The valid range for values is **-32,768 to 32,767**.
+  - Arithmetic operations that exceed this range will cause an **overflow error**.
+
+### 3. **Instruction Set**
+- The interpreter supports a variety of instructions, including:
+  - **Arithmetic Operations**: `ADDD`, `SUBD`, `MULD`, `DIVD`, etc.
+  - **Memory Operations**: `LODD`, `STOD`, `PUSH`, `POP`, etc.
+  - **Control Flow**: `JUMP`, `JZER`, `JPOS`, `CALL`, `RETN`, etc.
+  - **Bitwise Operations**: `ANDD`, `ORD`, `XORD`, `NOTD`, etc.
+  - **Debugging and Printing**: `PRINTAC`, `PRINTACCHAR`, `PRINTSP`, etc.

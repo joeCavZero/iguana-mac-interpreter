@@ -22,8 +22,7 @@ REACH_TO_LAST_CHAR_LOOP:
 PRINT:
     LODD LAST_CHAR_POINTER          # ac = *LAST_CHAR_POINTER
     SUBD STRING_PTR                 # ac = ac - *STRING_PTR (STRING)
-    SUBD ONE                        # ac = ac + 1
-    JPOS END                        # if ac == 0 goto END
+    JPOS PRINT_FIRST_CHAR           # if ac == 0 goto PRINT_FIRST_CHAR  
 
     LODD LAST_CHAR_POINTER          # ac = *LAST_CHAR_POINTER
     SWAP                            # sp = ac ; ac = sp
@@ -36,5 +35,11 @@ PRINT:
     STOD LAST_CHAR_POINTER          # *LAST_CHAR_POINTER = ac
 
     JUMP PRINT                      # goto PRINT
+PRINT_FIRST_CHAR:
+    LODD STRING_PTR                 # ac = *STRING_PTR
+    SWAP                            # sp = ac ; ac = sp
+    POP                             # ac = string[0]
+    PRINTACCHAR                     # print ac as a char
+    JUMP END                        # goto END
 END:
     HALT                            # finishes the program

@@ -486,22 +486,62 @@ impl VirtualMachine {
                                                                     }
                                                                 }
                                                             } else {
-                                                                let value_result = next_raw_token.get_token().parse::<i16>();
-                                                                match value_result {
-                                                                    Ok(value) => {
-                                                                        self.memory.push(
-                                                                            Instruction {
-                                                                                opcode: opcode,
-                                                                                arg: value,
-                                                                                line: actual_raw_token.line,
-                                                                                col: actual_raw_token.col,
-                                                                            }
-                                                                        );
-                                                                        operation_counter += 1;
-                                                                        token_counter += 2;
-                                                                    },
-                                                                    Err(_) => {
-                                                                        logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", actual_raw_token.line, actual_raw_token.col);
+                                                                if next_raw_token.is_hex_literal() {
+                                                                    let value_result = next_raw_token.to_hex_literal();
+                                                                    match value_result {
+                                                                        Some(value) => {
+                                                                            self.memory.push(
+                                                                                Instruction {
+                                                                                    opcode: opcode,
+                                                                                    arg: value,
+                                                                                    line: actual_raw_token.line,
+                                                                                    col: actual_raw_token.col,
+                                                                                }
+                                                                            );
+                                                                            operation_counter += 1;
+                                                                            token_counter += 2;
+                                                                        },
+                                                                        None => {
+                                                                            logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", actual_raw_token.line, actual_raw_token.col);
+                                                                        }
+                                                                    }
+                                                                } else if next_raw_token.is_binary_literal() {
+                                                                    let value_result = next_raw_token.to_binary_literal();
+                                                                    match value_result {
+                                                                        Some(value) => {
+                                                                            self.memory.push(
+                                                                                Instruction {
+                                                                                    opcode: opcode,
+                                                                                    arg: value,
+                                                                                    line: actual_raw_token.line,
+                                                                                    col: actual_raw_token.col,
+                                                                                }
+                                                                            );
+                                                                            operation_counter += 1;
+                                                                            token_counter += 2;
+                                                                        },
+                                                                        None => {
+                                                                            logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", actual_raw_token.line, actual_raw_token.col);
+                                                                        }
+                                                                    }
+                                                                } else {
+                                                                    let value_result = next_raw_token.get_token().parse::<i16>();
+                                                                    match value_result {
+                                                                        Ok(value) => {
+                                                                            self.memory.push(
+                                                                                Instruction {
+                                                                                    opcode: opcode,
+                                                                                    arg: value,
+                                                                                    line: actual_raw_token.line,
+                                                                                    col: actual_raw_token.col,
+                                                                                }
+                                                                            );
+                                                                            operation_counter += 1;
+                                                                            token_counter += 2;
+                                                                        },
+                                                                        Err(_) => {
+                                                                            logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", actual_raw_token.line, actual_raw_token.col);
+                                                                        }
                                                                     }
                                                                 }
                                                             }

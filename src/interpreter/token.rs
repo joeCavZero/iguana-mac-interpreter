@@ -156,13 +156,13 @@ impl Token {
                     match result.checked_add(hex_digit) {
                         Some(result) => hex_number = result,
                         None => {
-                            logkit::exit_with_positional_error_message("Hexadecimal literal overflow", self.line, self.col);
+                            logkit::exit_with_positional_error_message("Hexadecimal literal overflow, value must be between 0x0 and 0x7fff", self.line, self.col);
                             return None;
                         }
                     }
                 }
                 None => {
-                    logkit::exit_with_positional_error_message("Hexadecimal literal overflow", self.line, self.col);
+                    logkit::exit_with_positional_error_message("Hexadecimal literal overflow, value must be between 0x0 and 0x7fff", self.line, self.col);
                     return None;
                 }
             }
@@ -194,13 +194,13 @@ impl Token {
                     match result.checked_add(binary_digit) {
                         Some(result) => binary_number = result,
                         None => {
-                            logkit::exit_with_positional_error_message("Binary literal overflow", self.line, self.col);
+                            logkit::exit_with_positional_error_message("Binary literal overflow, value must be between 0b0 and 0b111111111111111", self.line, self.col);
                             return None;
                         }
                     }
                 }
                 None => {
-                    logkit::exit_with_positional_error_message("Binary literal overflow", self.line, self.col);
+                    logkit::exit_with_positional_error_message("Binary literal overflow, value must be between 0b0 and 0b111111111111111", self.line, self.col);
                     return None;
                 }
             }

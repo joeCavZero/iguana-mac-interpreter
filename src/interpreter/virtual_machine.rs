@@ -344,15 +344,15 @@ impl VirtualMachine {
                                                                         continue;
                                                                     },
                                                                     None => {
-                                                                        logkit::exit_with_positional_error_message("Expecter a string after .ascii or asciiz", actual_raw_token.line, actual_raw_token.col);
+                                                                        logkit::exit_with_positional_error_message("Expect a valid string after .ascii or asciiz", actual_raw_token.line, actual_raw_token.col);
                                                                     }
                                                                 }
                                                             } else {
-                                                                logkit::exit_with_positional_error_message("Expecter a string after .ascii or asciiz", actual_raw_token.line, actual_raw_token.col);
+                                                                logkit::exit_with_positional_error_message("Expect a valid string after .ascii or asciiz", actual_raw_token.line, actual_raw_token.col);
                                                             }
                                                         },
                                                         None => {
-                                                            logkit::exit_with_positional_error_message("Expecter a string after .ascii or asciiz", actual_raw_token.line, actual_raw_token.col);
+                                                            logkit::exit_with_positional_error_message("Expect a valid string after .ascii or asciiz", actual_raw_token.line, actual_raw_token.col);
                                                         }
                                                     }
                                                 },

@@ -8,3 +8,9 @@ pub struct  Instruction {
     pub col: u32,
 }
 
+impl Instruction {
+    pub fn to_hash(&self) -> String {
+        format!("{:08b}{:016b}", self.opcode as u8, self.arg)
+    }
+}
+

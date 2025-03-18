@@ -43,4 +43,4 @@ NEWLINE: .ascii "\n"
 
     SLEEPI 1000        # sleep thread for 1 second
 
-    JUMP 12          # jump to operation with index 0
+    JUMP 12          # jump to operation at line 12

@@ -456,7 +456,7 @@ impl VirtualMachine {
                                         if last_line_initialized < actual_raw_token.line {
                                             last_line_initialized = actual_raw_token.line;
                                         } else {
-                                            logkit::exit_with_positional_error_message("You only can initialize one label at at time on the beginning of the line in the .text field", actual_raw_token.line, actual_raw_token.col);
+                                            logkit::exit_with_positional_error_message("You only can initialize one label at at time on the beginning of the line on the .text field", actual_raw_token.line, actual_raw_token.col);
                                         }
                                         let label = actual_raw_token.get_token()[..actual_raw_token.get_token().len()-1].to_string();
                                         let mut next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter + 1);
@@ -882,7 +882,7 @@ impl VirtualMachine {
                                 }
                             }
 
-                            match self.set_stack_value(self.sp as i64, ( self.pc + 1 ) as i16) {
+                            match self.set_stack_value(self.sp as i64, instruction.line as i16 + 1) {
                                 Ok(_) => {},
                                 Err(_) => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
@@ -960,15 +960,28 @@ impl VirtualMachine {
                             self.sp += 1; // decrementa o sp
                             self.pc += 1;
                         },
-                        Opcode::Retn => {
-                            self.pc = match self.stack.get(self.sp as usize) {
-                                Some(value) => *value as u32,
+                        Opcode::Retn => {   
+
+                            if instruction.arg < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            }                      
+                            
+                            let sp_value = match self.stack.get(self.sp as usize) {
+                                Some(value) => *value,
                                 None => {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
                                     0
                                 }
                             };
+
+                            
+
+                            let next_instruction_index = self.get_closest_instruction_index_by_line(sp_value as u32);
+
+                            self.pc = next_instruction_index;
+
                             self.sp += 1; // decrementa o sp
+                            
                         },
                         Opcode::Swap => {
                             let tmp = self.ac;
@@ -1276,6 +1289,28 @@ impl VirtualMachine {
 
                         Opcode::Printlnsp => {
                             println!("{}", self.sp);
+                            io::stdout().flush().unwrap();
+                            self.pc += 1;
+                        },
+
+                        Opcode::Printinstruction => {
+                            if instruction.arg < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            }
+                            let instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
+                            let instruction = self.memory.get(instruction_index as usize).unwrap();
+                            print!("{}", instruction.to_hash());
+                            io::stdout().flush().unwrap();
+                            self.pc += 1;
+                        },
+
+                        Opcode::Printlninstruction => {
+                            if instruction.arg < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            }
+                            let instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
+                            let instruction = self.memory.get(instruction_index as usize).unwrap();
+                            println!("{}", instruction.to_hash());
                             io::stdout().flush().unwrap();
                             self.pc += 1;
                         },

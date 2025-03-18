@@ -180,27 +180,27 @@ iguana info
 ## Control Flow Operations
 
 - **JPOS X**  
-  **Behavior**: Jumps to address `X` if the accumulator (`ac`) is positive.  
+  **Behavior**: Jumps to line `X` if the accumulator (`ac`) is positive.  
   **Pseudo-behavior**: `if ac >= 0: pc = X`
 
 - **JZER X**  
-  **Behavior**: Jumps to address `X` if the accumulator (`ac`) is zero.  
+  **Behavior**: Jumps to line `X` if the accumulator (`ac`) is zero.  
   **Pseudo-behavior**: `if ac == 0: pc = X`
 
 - **JUMP X**  
-  **Behavior**: Unconditionally jumps to address `X`.  
+  **Behavior**: Unconditionally jumps to line `X`.  
   **Pseudo-behavior**: `pc = X`
 
 - **JNEG X**  
-  **Behavior**: Jumps to address `X` if the accumulator (`ac`) is negative.  
+  **Behavior**: Jumps to line `X` if the accumulator (`ac`) is negative.  
   **Pseudo-behavior**: `if ac < 0: pc = X`
 
 - **JNZE X**  
-  **Behavior**: Jumps to address `X` if the accumulator (`ac`) is not zero.  
+  **Behavior**: Jumps to line `X` if the accumulator (`ac`) is not zero.  
   **Pseudo-behavior**: `if ac != 0: pc = X`
 
 - **CALL X**  
-  **Behavior**: Calls a subroutine at address `X`, saving the return address on the stack.  
+  **Behavior**: Calls a subroutine at line `X`, saving the return address on the stack.  
   **Pseudo-behavior**: `sp = sp - 1; M[sp] = pc + 1; pc = X`
 
 - **RETN**  

@@ -1,7 +1,5 @@
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Opcode {
-    None,
-
     Lodd,
     Stod,
     Addd,
@@ -29,13 +27,6 @@ pub enum Opcode {
     /* 
      *  Aparti daqui são operações que eu criei
      */
-    
-    Printlnac, Printac,
-    Printlnacchar, Printacchar,
-
-    Printsp, Printlnsp,
-    Printlntopi, Printlntopd, Printtopi, Printtopd,
-    Printlntopchari, Printlntopchard, Printtopchari, Printtopchard,
 
     Halt,
     Andi,
@@ -60,6 +51,17 @@ pub enum Opcode {
     Sleepd,
     Sleepi,
 
+
+    Printlnac, Printac,
+    Printlnacchar, Printacchar,
+
+    Printsp, Printlnsp,
+    Printlntopi, Printlntopd, Printtopi, Printtopd,
+    Printlntopchari, Printlntopchard, Printtopchari, Printtopchard,
+
+    Printinstruction, Printlninstruction,
+
+    None,
 }
 
 
@@ -109,6 +111,8 @@ impl Opcode {
             "PRINTSP" => Opcode::Printsp, "PRINTLNSP" => Opcode::Printlnsp,
             "PRINTLNTOPI" => Opcode::Printlntopi, "PRINTLNTOPD" => Opcode::Printlntopd, "PRINTTOPI" => Opcode::Printtopi, "PRINTTOPD" => Opcode::Printtopd,
             "PRINTLNTOPCHARI" => Opcode::Printlntopchari, "PRINTLNTOPCHARD" => Opcode::Printlntopchard, "PRINTTOPCHARI" => Opcode::Printtopchari, "PRINTTOPCHARD" => Opcode::Printtopchard,
+
+            "PRINTINSTRUCTION" => Opcode::Printinstruction, "PRINTLNINSTRUCTION" => Opcode::Printlninstruction,
 
             "ANDI" => Opcode::Andi, 
             "ORI" => Opcode::Ori,

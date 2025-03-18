@@ -13,36 +13,33 @@ A simple 16-bit stack-based assembly interpreter for Andrew S. Tanenbaum's MAC a
 
 The following example finds the largest of two values:
 
-```arm
-# Find the biggest between two values
-
+```python
+# program to print a string
 .data
-VAL1: .word 10
-VAL2: .word 257
-BIGGER: .word 0
-
+STRING: .asciiz "Hello, World!" # alocates a string in memory
+CHAR_POINTER: .space 2          # alocates 2 bytes in memory for a "pointer"
+ONE: .word 1                    # alocates a word in memory for a auxiliar variable
 .text
-    LODD VAL1
-    SUBD VAL2
-    JPOS LABEL1
-
-    LODD VAL2 
-    STOD BIGGER
-    JUMP PRINT_AND_END
-
-LABEL1:
-    LODD VAL1  
-    STOD BIGGER   
-
-PRINT_AND_END:
-    LODD BIGGER
-    PRINTLNAC
-    HALT
+MAIN:
+    LOCO STRING         # ac = STRING as a pointer
+    STOD CHAR_POINTER   # *CHAR_POINTER = STRING
+LOOP:
+    LODD CHAR_POINTER   # ac = *CHAR_POINTER
+    SWAP                # sp = ac ; ac = sp
+    POP                 # ac = *sp ; sp = sp + 1 (decrement sp)
+    JZER END            # if ac == 0 goto END
+    PRINTACCHAR         # print ac as a char
+    LODD CHAR_POINTER        # ac = *CHAR_POINTER
+    SUBD ONE            # ac = ac - 1
+    STOD CHAR_POINTER   # *CHAR_POINTER = ac
+    JUMP LOOP           # goto LOOP
+END:
+    HALT                # finishes the program
 ```
 
 output:
 ```
-257
+Hello, World!
 ```
 
 ---
@@ -181,31 +178,31 @@ iguana info
 
 - **JPOS X**  
   **Behavior**: Jumps to the instruction at line `X` if the accumulator (`ac`) is positive.  
-  **Pseudo-behavior**: `if ac >= 0: go to line X`
+  **Pseudo-behavior**: `if ac >= 0: pc = instruction_on_line( X ), else: pc = pc + 1`
 
 - **JZER X**  
   **Behavior**: Jumps to the instruction at line `X` if the accumulator (`ac`) is zero.  
-  **Pseudo-behavior**: `if ac == 0: go to line X`
+  **Pseudo-behavior**: `if ac == 0: pc = instruction_on_line( X ), else: pc = pc + 1`
 
 - **JUMP X**  
   **Behavior**: Unconditionally jumps to the instruction at line `X`.  
-  **Pseudo-behavior**: `go to line X`
+  **Pseudo-behavior**: `pc = instruction_on_line( X )`
 
 - **JNEG X**  
   **Behavior**: Jumps to the instruction at line `X` if the accumulator (`ac`) is negative.  
-  **Pseudo-behavior**: `if ac < 0: go to line X`
+  **Pseudo-behavior**: `if ac < 0: pc = instruction_on_line( X ), else: pc = pc + 1`
 
 - **JNZE X**  
   **Behavior**: Jumps to the instruction at line `X` if the accumulator (`ac`) is not zero.  
-  **Pseudo-behavior**: `if ac != 0: go to line X`
+  **Pseudo-behavior**: `if ac != 0: pc = instruction_on_line( X ), else: pc = pc + 1`
 
 - **CALL X**  
   **Behavior**: Calls a subroutine at line `X`, saving the return address on the stack.  
-  **Pseudo-behavior**: `sp = sp - 1; M[sp] = current_line + 1; go to line X`
+  **Pseudo-behavior**: `sp = sp - 1; M[sp] = current_line + 1; pc = instruction_on_line( X )`
 
 - **RETN**  
   **Behavior**: Returns from a subroutine by popping the return address from the stack.  
-  **Pseudo-behavior**: `go to line popped from stack; sp = sp + 1`
+  **Pseudo-behavior**: `pc = instruction_on_line( M[sp] ); sp = sp + 1`
 
 ## Bitwise Operations
 
@@ -315,13 +312,13 @@ iguana info
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character.  
   **Pseudo-behavior**: `print( char( M[ sp + M[X] ] ) )`
 
-- **PRINTLNINSTRUCTION X**
+- **PRINTLNINSTRUCTION X**  
   **Behavior**: Prints the instruction hash on line `X` with a line break.
-  **Pseudo-behavior**: `print( hash( instruction_on_line[ X ] ) + '\n' )`
+  **Pseudo-behavior**: `print( hash( instruction_on_line( X ) ) + '\n' )`
 
-- **PRINTINSTRUCTION X**
+- **PRINTINSTRUCTION X**  
   **Behavior**: Prints the instruction hash on line `X`.
-  **Pseudo-behavior**: `print( hash( instruction_on_line[ X ] ) )`
+  **Pseudo-behavior**: `print( hash( instruction_on_line( X ) ) )`
 
 
 
@@ -346,6 +343,9 @@ Here are some key details about the Iguana MAC Interpreter that you should know:
 ### **Stack Size**
 - The interpreter uses a fixed-size stack with a capacity of **32,768 items**. This means that the stack can hold up to 32,768 `i16` values at any given time.
 - Exceeding this limit will result in a **stack overflow** or **stack pointer out-of-bounds error**.
+
+### **Stack Growth Direction**
+- The stack pointer (`sp`) and the stack grow **downward** in memory. This means that as values are pushed onto the stack, the stack pointer decreases, and as values are popped, the stack pointer increases.
 
 ### **16-bit Architecture**
 - The interpreter operates on a **16-bit architecture**, meaning:

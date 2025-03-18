@@ -1547,15 +1547,10 @@ impl VirtualMachine {
         
         let mut closest_index: u32 = 0;
         for (index, instruction) in self.memory.iter().enumerate() {
-            if instruction.line == line {
-                closest_index = index as u32;
-                break;
-            } else if instruction.line > line {
-                closest_index = index as u32;
-                break;
-            }
+            if instruction.line >= line {
             closest_index = index as u32;
-
+            break;
+            }
         }
         //print!("[ {} ]", closest_index);
         //std::thread::sleep(std::time::Duration::from_millis(100));

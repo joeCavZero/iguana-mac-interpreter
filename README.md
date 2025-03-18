@@ -180,32 +180,32 @@ iguana info
 ## Control Flow Operations
 
 - **JPOS X**  
-  **Behavior**: Jumps to line `X` if the accumulator (`ac`) is positive.  
-  **Pseudo-behavior**: `if ac >= 0: pc = X`
+  **Behavior**: Jumps to the instruction at line `X` if the accumulator (`ac`) is positive.  
+  **Pseudo-behavior**: `if ac >= 0: go to line X`
 
 - **JZER X**  
-  **Behavior**: Jumps to line `X` if the accumulator (`ac`) is zero.  
-  **Pseudo-behavior**: `if ac == 0: pc = X`
+  **Behavior**: Jumps to the instruction at line `X` if the accumulator (`ac`) is zero.  
+  **Pseudo-behavior**: `if ac == 0: go to line X`
 
 - **JUMP X**  
-  **Behavior**: Unconditionally jumps to line `X`.  
-  **Pseudo-behavior**: `pc = X`
+  **Behavior**: Unconditionally jumps to the instruction at line `X`.  
+  **Pseudo-behavior**: `go to line X`
 
 - **JNEG X**  
-  **Behavior**: Jumps to line `X` if the accumulator (`ac`) is negative.  
-  **Pseudo-behavior**: `if ac < 0: pc = X`
+  **Behavior**: Jumps to the instruction at line `X` if the accumulator (`ac`) is negative.  
+  **Pseudo-behavior**: `if ac < 0: go to line X`
 
 - **JNZE X**  
-  **Behavior**: Jumps to line `X` if the accumulator (`ac`) is not zero.  
-  **Pseudo-behavior**: `if ac != 0: pc = X`
+  **Behavior**: Jumps to the instruction at line `X` if the accumulator (`ac`) is not zero.  
+  **Pseudo-behavior**: `if ac != 0: go to line X`
 
 - **CALL X**  
   **Behavior**: Calls a subroutine at line `X`, saving the return address on the stack.  
-  **Pseudo-behavior**: `sp = sp - 1; M[sp] = pc + 1; pc = X`
+  **Pseudo-behavior**: `sp = sp - 1; M[sp] = current_line + 1; go to line X`
 
 - **RETN**  
   **Behavior**: Returns from a subroutine by popping the return address from the stack.  
-  **Pseudo-behavior**: `pc = M[sp]; sp = sp + 1`
+  **Pseudo-behavior**: `go to line popped from stack; sp = sp + 1`
 
 ## Bitwise Operations
 
@@ -314,6 +314,16 @@ iguana info
 - **PRINTTOPCHARD X**  
   **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character.  
   **Pseudo-behavior**: `print( char( M[ sp + M[X] ] ) )`
+
+- **PRINTLNINSTRUCTION X**
+  **Behavior**: Prints the instruction hash on line `X` with a line break.
+  **Pseudo-behavior**: `print( hash( instruction_on_line[ X ] ) + '\n' )`
+
+- **PRINTINSTRUCTION X**
+  **Behavior**: Prints the instruction hash on line `X`.
+  **Pseudo-behavior**: `print( hash( instruction_on_line[ X ] ) )`
+
+
 
 ## Custom Operations
 

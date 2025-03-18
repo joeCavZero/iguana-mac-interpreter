@@ -9,15 +9,15 @@ ONE: .word 1
 NEWLINE: .ascii "\n"
 
 .text
-    LOCO STRING     # operation with index 0
-    SWAP            # operation with index 1
-    POP             # operation with index 2
-    PRINTACCHAR     # operation with index 3
+    LOCO STRING     # operation at line 12
+    SWAP            # operation at line 13
+    POP             # operation at line 14
+    PRINTACCHAR     # operation at line 15
     
-    LOCO STRING     # operation with index 4
-    SUBD ONE        # operation with index 5
-    SWAP            # operation with index 6
-    POP             # ...
+    LOCO STRING     # operation at line 17
+    SUBD ONE        # [...]
+    SWAP            
+    POP             
     PRINTACCHAR
 
     LOCO STRING
@@ -41,6 +41,6 @@ NEWLINE: .ascii "\n"
     LODD NEWLINE
     PRINTACCHAR
 
-    SLEEPI 1        # sleep thread for 1 second
+    SLEEPI 1000        # sleep thread for 1 second
 
-    JUMP 0          # jump to operation with index 0
+    JUMP 12          # jump to operation with index 0

@@ -225,7 +225,8 @@ impl VirtualMachine {
     fn first_pass(&mut self, raw_tokens_vector: &Vec<Token>){
         // ==== PRIMEIRA PASSAGEM ====
         let mut section = Section::Text;
-        let mut memory_label_counter = 0;
+        //let mut memory_labe l_counter = 0;
+        let mut last_line_initialized = 0;
         let mut token_counter = 0;
         'token_counter_loop: while token_counter < raw_tokens_vector.len() {
             let actual_raw_token_option = raw_tokens_vector.get(token_counter).cloned();
@@ -312,12 +313,10 @@ impl VirtualMachine {
                                                                         );
                                                                         
                                                                         
-                                                                        let mut string_literal_bytes = string_literal.as_bytes().to_vec();
-                                                                        if next_raw_token.get_token() == ".ascii" {
-                                                                            string_literal_bytes = string_literal_bytes.to_vec(); // isso de começar em 2 é para ignorar o '\' e o 'n' do final da string_literal
-                                                                        } else {
-                                                                            string_literal_bytes = string_literal_bytes.to_vec();
-                                                                            string_literal_bytes.push( 0 ); // push '\0'
+                                                                        let mut string_literal_bytes: Vec<u8> = string_literal.as_bytes().to_vec();
+                                                                    
+                                                                        if next_raw_token.get_token() == ".asciiz" {
+                                                                            string_literal_bytes.push(0);
                                                                         }
                                                                         /* 
                                                                          *  NÃO SEI SE ISSO É NECESSÁRIO, POIS NÃO SEI SE A ORDEM DOS BYTES IMPORTA
@@ -335,9 +334,12 @@ impl VirtualMachine {
                                                                          *  string_literal_bytes.reverse(); 
                                                                          */
 
-                                                                        for b in string_literal_bytes {
+                                                                         for b in string_literal_bytes {
+                                                                            if self.sp == 0 {
+                                                                                logkit::exit_with_error_message("Stack overflow: no space left to insert string literal");
+                                                                            }
                                                                             self.sp -= 1;
-                                                                            self.stack[self.sp as usize] = b as i16
+                                                                            self.stack[self.sp as usize] = b as i16;
                                                                         }
 
                                                                         token_counter += 3;
@@ -374,6 +376,11 @@ impl VirtualMachine {
                                      *      
                                      */
                                     if actual_raw_token.is_label() {
+                                        if last_line_initialized < actual_raw_token.line {
+                                            last_line_initialized = actual_raw_token.line;
+                                        } else {
+                                            logkit::exit_with_positional_error_message("You only can initialize one label at at time on the beginning of the line in the .text field", actual_raw_token.line, actual_raw_token.col);
+                                        }
                                         let label = actual_raw_token.get_token()[..actual_raw_token.get_token().len()-1].to_string();
                                         let mut next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter + 1);
                                         match next_raw_token_option.as_mut() {
@@ -382,7 +389,8 @@ impl VirtualMachine {
                                                 if next_opcode != Opcode::None {
                                                     self.symbol_table.insert(
                                                         label,
-                                                        memory_label_counter,
+                                                        //memory_label_counter,
+                                                        actual_raw_token.line,
                                                     );
                                                     
                                                     if Opcode::is_argumented(next_opcode) {
@@ -400,7 +408,8 @@ impl VirtualMachine {
                                                 } else if next_raw_token.is_label() {
                                                     self.symbol_table.insert(
                                                         label,
-                                                        memory_label_counter,
+                                                        //memory_label_counter,
+                                                        actual_raw_token.line,
                                                     );
                                                     token_counter += 1;
                                                     continue;
@@ -413,6 +422,7 @@ impl VirtualMachine {
                                             }
                                         }
                                     } else {
+                                        last_line_initialized = actual_raw_token.line;
                                         let next_opcode = Opcode::from_str(actual_raw_token.get_token().as_str());
                                         if next_opcode != Opcode::None {
                                             if Opcode::is_argumented(next_opcode) {
@@ -420,9 +430,9 @@ impl VirtualMachine {
                                             } else {
                                                 token_counter += 1;
                                             }
-                                            memory_label_counter += 1;
+                                            //memory_label_counter += 1;
                                         } else {
-                                            memory_label_counter += 1; // Não sei se isso é necessário, talvez isso cause um bug no futuro
+                                            //memory_label_counter += 1; // Não sei se isso é necessário, talvez isso cause um bug no futuro
                                             token_counter += 1;
                                         }
                                 
@@ -576,6 +586,16 @@ impl VirtualMachine {
                 None => { break 'token_counter_loop; }
             }
         }
+        
+        // Adiciona um HALT no final do programa
+        self.memory.push(
+            Instruction {
+                opcode: Opcode::Halt,
+                arg: 0,
+                line: u32::MAX,
+                col: u32::MAX,
+            }
+        );
     }
 
     fn execute(&mut self) {
@@ -650,45 +670,38 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Jpos => {
-
-                            compare_instruction_out_of_bounds(
-                                instruction.arg,
-                                self.memory.len() as u32,
-                                instruction.line,
-                                instruction.col,
-                            );
+                            if instruction.arg < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            }
+                            let next_instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
 
                             if self.ac >= 0 {
-                                self.pc = instruction.arg as u32;
+                                self.pc = next_instruction_index;
                             } else {
                                 self.pc += 1;
                             }
                         },
                         Opcode::Jzer => {
+                            if instruction.arg < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            }
 
-                            compare_instruction_out_of_bounds(
-                                instruction.arg,
-                                self.memory.len() as u32,
-                                instruction.line,
-                                instruction.col,
-                            );
-
+                            let next_instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
+                            
                             if self.ac == 0 {
-                                self.pc = instruction.arg as u32;
+                                self.pc = next_instruction_index;
                             } else {
                                 self.pc += 1;
                             }
                         },
                         Opcode::Jump => {
+                            if instruction.arg < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            }
+                            let next_instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
 
-                            compare_instruction_out_of_bounds(
-                                instruction.arg,
-                                self.memory.len() as u32,
-                                instruction.line,
-                                instruction.col,
-                            );
 
-                            self.pc = instruction.arg as u32;
+                            self.pc = next_instruction_index;
                         },
                         Opcode::Loco => {
                             self.ac = instruction.arg;
@@ -753,43 +766,37 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Jneg => {
+                            if instruction.arg < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            }
 
-                            compare_instruction_out_of_bounds(
-                                instruction.arg,
-                                self.memory.len() as u32,
-                                instruction.line,
-                                instruction.col,
-                            );
+                            let next_instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
 
                             if self.ac < 0 {
-                                self.pc = instruction.arg as u32;
+                                self.pc = next_instruction_index;
                             } else {
                                 self.pc += 1;
                             }
                         },
                         Opcode::Jnze => {
+                            if instruction.arg < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            }
 
-                            compare_instruction_out_of_bounds(
-                                instruction.arg,
-                                self.memory.len() as u32,
-                                instruction.line,
-                                instruction.col,
-                            );
+                            let next_instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
 
                             if self.ac != 0 {
-                                self.pc = instruction.arg as u32;
+                                self.pc = next_instruction_index;
                             } else {
                                 self.pc += 1;
                             }
                         },
                         Opcode::Call => {
+                            if instruction.arg < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            }
 
-                            compare_instruction_out_of_bounds(
-                                instruction.arg,
-                                self.memory.len() as u32,
-                                instruction.line,
-                                instruction.col,
-                            );
+                            let next_instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
 
                             match self.sp.checked_sub(1) {
                                 Some(aux) => {
@@ -806,7 +813,7 @@ impl VirtualMachine {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
                                 }
                             }
-                            self.pc = instruction.arg as u32;
+                            self.pc = next_instruction_index;
                         },
                         Opcode::Pshi => {
                             match self.sp.checked_sub(1) {
@@ -1412,6 +1419,38 @@ impl VirtualMachine {
             }
         }
     }
+
+    fn get_closest_instruction_index_by_line(&self, line: u32) -> u32 {
+        /*
+         * e.g.:
+         * 1- .text
+         * 2- LODD X (0 index in memory)
+         * 3-
+         * 4- ADDD X (1 index in memory)
+         * 
+         * get_closest_instruction_index_by_line(1) -> 0 (index)
+         * get_closest_instruction_index_by_line(2) -> 0
+         * get_closest_instruction_index_by_line(3) -> 1
+         * get_closest_instruction_index_by_line(4) -> 1
+         * get_closest_instruction_index_by_line(5) -> last HALT index (self.memory.len() - 1)
+         */
+        
+        let mut closest_index: u32 = 0;
+        for (index, instruction) in self.memory.iter().enumerate() {
+            if instruction.line == line {
+                closest_index = index as u32;
+                break;
+            } else if instruction.line > line {
+                closest_index = index as u32;
+                break;
+            }
+            closest_index = index as u32;
+
+        }
+        //print!("[ {} ]", closest_index);
+        //std::thread::sleep(std::time::Duration::from_millis(100));
+        closest_index
+    }
 }
 
 fn get_nth_token(raw_tokens: &Vec<Token>, n: usize) -> Option<Token> {
@@ -1474,10 +1513,4 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize) -> Vec<i16> {
         }
     }
     values
-}
-
-fn compare_instruction_out_of_bounds(value: i16, max: u32, line: u32, col: u32) {
-    if value < 0 || value >= max as i16 {
-        logkit::exit_with_positional_error_message(format!("Control flow value out of bounds (0...{})", max).as_str(), line, col);
-    }
 }

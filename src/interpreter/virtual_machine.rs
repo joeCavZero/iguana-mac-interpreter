@@ -358,6 +358,83 @@ impl VirtualMachine {
                                                         }
                                                     }
                                                 },
+                                                ".space" => {
+                                                    /*
+                                                     *  Na minha ISA, o .space aloca espaço na memoria (stack) e não inicializa com nenhum valor
+                                                     *  então, o valor do .space é a quantidade de bytes que serão alocados na stack
+                                                     *  Não é possivel que o argumento do .space seja um numero negativo nem impar, pois a stack é de 16 bits
+                                                     *  e.g.:
+                                                     *      AREA: .space 10 ou .space 0xa -> aloca 10 bytes na stack
+                                                     *      AREA: .space 11 -> erro, pois a stack é de 16 bits e não pode alocar um número ímpar de bytes
+                                                     *      AREA: .space -10 -> erro, pois a stack não pode alocar um número negativo de bytes
+                                                     *      AREA: .space 0b1010 -> aloca 10 bytes na stack
+                                                     *      AREA: .space 0x0a -> aloca 10 bytes na stack
+                                                     */
+                                                    let next_next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter+2);
+                                                    match next_next_raw_token_option {
+                                                        Some(next_next_raw_token) => {
+                                                            let mut value = 0;
+                                                            if next_next_raw_token.is_hex_literal() {
+                                                                
+                                                                let hex_value_result = next_next_raw_token.to_hex_literal();
+                                                                match hex_value_result {
+                                                                    Some(v) => {
+                                                                        value = v;
+                                                                    },
+                                                                    None => {
+                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space", actual_raw_token.line, actual_raw_token.col);
+                                                                    }
+                                                                }
+                                                            } else if next_next_raw_token.is_binary_literal() {
+                                                                let binary_value_result = next_next_raw_token.to_binary_literal();
+                                                                match binary_value_result {
+                                                                    Some(v) => {
+                                                                        value = v;
+                                                                    },
+                                                                    None => {
+                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space", actual_raw_token.line, actual_raw_token.col);
+                                                                    }
+                                                                } 
+                                                            } else {
+                                                                let value_result = next_next_raw_token.get_token().parse::<i16>();
+                                                                match value_result {
+                                                                    Ok(v) => {
+                                                                        value = v;
+                                                                    },
+                                                                    Err(_) => {
+                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space", actual_raw_token.line, actual_raw_token.col);
+                                                                    }
+                                                                }
+                                                            }
+                                                                        
+                                                            if value < 0 {
+                                                                logkit::exit_with_positional_error_message("Expected a positive value after .space", actual_raw_token.line, actual_raw_token.col);
+                                                            }
+                                                            if value % 2 != 0 {
+                                                                logkit::exit_with_positional_error_message("Expected an even (multiple of 2) value after .space, this ISA only supports 16 bits stack values", actual_raw_token.line, actual_raw_token.col);
+                                                            }
+                                                                        
+                                                            self.symbol_table.insert(
+                                                                label,
+                                                                self.sp -1,
+                                                            );
+
+                                                            for _ in 0..(value/2) {
+                                                                if self.sp == 0 {
+                                                                    logkit::exit_with_error_message("Stack overflow: no space left to insert .space");
+                                                                }
+                                                                self.sp -= 1;
+                                                            }
+                                                            
+                                                            token_counter += 3;
+                                                            continue;
+                                                            
+                                                        },
+                                                        None => {
+                                                            logkit::exit_with_positional_error_message("Expected a valid value after .space", actual_raw_token.line, actual_raw_token.col);
+                                                        }
+                                                    }
+                                                }
                                                 _ => {
                                                     logkit::exit_with_positional_error_message("Expected .word, .byte, .ascii or .asciiz after label", actual_raw_token.line, actual_raw_token.col);
                                                 }
@@ -389,7 +466,6 @@ impl VirtualMachine {
                                                 if next_opcode != Opcode::None {
                                                     self.symbol_table.insert(
                                                         label,
-                                                        //memory_label_counter,
                                                         actual_raw_token.line,
                                                     );
                                                     
@@ -408,7 +484,6 @@ impl VirtualMachine {
                                                 } else if next_raw_token.is_label() {
                                                     self.symbol_table.insert(
                                                         label,
-                                                        //memory_label_counter,
                                                         actual_raw_token.line,
                                                     );
                                                     token_counter += 1;

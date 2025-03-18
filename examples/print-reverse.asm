@@ -4,7 +4,7 @@
     LAST_CHAR_POINTER: .word 0
     ONE: .word 1
 
-    STRING_PTR: .word 0
+    STRING_PTR: .space 2
 .text
     LOCO STRING                     # ac = STRING as a pointer
     STOD LAST_CHAR_POINTER          # *LAST_CHAR_POINTER = STRING

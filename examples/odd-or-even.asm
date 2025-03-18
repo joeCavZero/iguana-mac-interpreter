@@ -1,7 +1,7 @@
 # program to check if a number is odd or even
 .data
-VALUE: .word 12   
-RESULT: .word 0 
+VALUE: .word 11   
+RESULT: .space 2 
 
 .text
     LODD VALUE    # load the value to be checked

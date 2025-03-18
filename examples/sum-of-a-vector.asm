@@ -3,7 +3,7 @@
     VECTOR: .word 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
     VECTOR_SIZE: .word 10
     SUM: .word 0
-    AUX: .word 0
+    AUX: .space 2
 
     ONE: .word 1
     SPACE: .ascii " "

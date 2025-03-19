@@ -453,10 +453,8 @@ impl VirtualMachine {
                                      *      
                                      */
                                     if actual_raw_token.is_label() {
-                                        if last_line_initialized < actual_raw_token.line {
-                                            last_line_initialized = actual_raw_token.line;
-                                        } else {
-                                            logkit::exit_with_positional_error_message("You only can initialize one label at at time on the beginning of the line on the .text field", actual_raw_token.line, actual_raw_token.col);
+                                        if last_line_initialized >= actual_raw_token.line {
+                                            logkit::exit_with_positional_error_message("You only can initialize labels before instructions", actual_raw_token.line, actual_raw_token.col);
                                         }
                                         let label = actual_raw_token.get_token()[..actual_raw_token.get_token().len()-1].to_string();
                                         let mut next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter + 1);
@@ -528,8 +526,6 @@ impl VirtualMachine {
 
     fn second_pass(&mut self, raw_tokens: &Vec<Token>) {
         let mut section = Section::Text;
-        #[allow(unused_variables)]
-        let mut operation_counter = 0;
         let mut token_counter = 0;
         'token_counter_loop: while token_counter < raw_tokens.len() {
             let actual_raw_token_option = raw_tokens.get(token_counter).cloned();
@@ -563,7 +559,6 @@ impl VirtualMachine {
                                                                             }
                                                                         );
 
-                                                                        operation_counter += 1;
                                                                         token_counter += 2;
                                                                     },
                                                                     None => {
@@ -583,7 +578,7 @@ impl VirtualMachine {
                                                                                     col: actual_raw_token.col,
                                                                                 }
                                                                             );
-                                                                            operation_counter += 1;
+
                                                                             token_counter += 2;
                                                                         },
                                                                         None => {
@@ -602,7 +597,7 @@ impl VirtualMachine {
                                                                                     col: actual_raw_token.col,
                                                                                 }
                                                                             );
-                                                                            operation_counter += 1;
+                                                                            
                                                                             token_counter += 2;
                                                                         },
                                                                         None => {
@@ -621,7 +616,7 @@ impl VirtualMachine {
                                                                                     col: actual_raw_token.col,
                                                                                 }
                                                                             );
-                                                                            operation_counter += 1;
+                                                                            
                                                                             token_counter += 2;
                                                                         },
                                                                         Err(_) => {
@@ -645,7 +640,7 @@ impl VirtualMachine {
                                                     col: actual_raw_token.col,
                                                 }
                                             );
-                                            operation_counter += 1;
+                                            
                                             token_counter += 1;
                                         }
                                     } else if actual_raw_token.is_label() {

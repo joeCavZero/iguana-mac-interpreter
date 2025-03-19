@@ -441,7 +441,7 @@ impl VirtualMachine {
                                 
                                         }
                                     } else {
-                                        logkit::exit_with_positional_error_message("Expected a valid label or a valid value after comma", actual_raw_token.line, actual_raw_token.col);
+                                        logkit::exit_with_positional_error_message("Expected a valid label or a valid value", actual_raw_token.line, actual_raw_token.col);
                                     }
                                 },
                                 Section::Text => {
@@ -453,7 +453,7 @@ impl VirtualMachine {
                                      */
                                     if actual_raw_token.is_label() {
                                         if last_line_initialized >= actual_raw_token.line {
-                                            logkit::exit_with_positional_error_message("You only can initialize labels before instructions", actual_raw_token.line, actual_raw_token.col);
+                                            logkit::exit_with_positional_error_message("You cannot initialize labels after instructions in the same line", actual_raw_token.line, actual_raw_token.col);
                                         }
                                         let label = actual_raw_token.get_token()[..actual_raw_token.get_token().len()-1].to_string();
                                         let mut next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter + 1);
@@ -1291,7 +1291,7 @@ impl VirtualMachine {
                                 logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
                             }
 
-                            match self.get_exactly_instruction_index_by_line(instruction.arg as u32) {
+                            match self.get_instruction_index_on_exactly_line(instruction.arg as u32) {
                                 Some(instruction_index) => {
                                     let instruction = self.memory.get(instruction_index as usize).unwrap();
                                     print!("{}", instruction.to_hash());
@@ -1310,7 +1310,7 @@ impl VirtualMachine {
                                 logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
                             }
 
-                            match self.get_exactly_instruction_index_by_line(instruction.arg as u32) {
+                            match self.get_instruction_index_on_exactly_line(instruction.arg as u32) {
                                 Some(instruction_index) => {
                                     let instruction = self.memory.get(instruction_index as usize).unwrap();
                                     println!("{}", instruction.to_hash());
@@ -1564,7 +1564,7 @@ impl VirtualMachine {
         closest_index
     }
 
-    fn get_exactly_instruction_index_by_line(&self, line: u32) -> Option<u32> {
+    fn get_instruction_index_on_exactly_line(&self, line: u32) -> Option<u32> {
         for (index, instruction) in self.memory.iter().enumerate() {
             if instruction.line == line {
                 return Some(index as u32);

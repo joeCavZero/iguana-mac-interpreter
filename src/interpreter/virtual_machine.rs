@@ -225,7 +225,6 @@ impl VirtualMachine {
     fn first_pass(&mut self, raw_tokens_vector: &Vec<Token>){
         // ==== PRIMEIRA PASSAGEM ====
         let mut section = Section::Text;
-        //let mut memory_labe l_counter = 0;
         let mut last_line_initialized = 0;
         let mut token_counter = 0;
         'token_counter_loop: while token_counter < raw_tokens_vector.len() {
@@ -503,9 +502,8 @@ impl VirtualMachine {
                                             } else {
                                                 token_counter += 1;
                                             }
-                                            //memory_label_counter += 1;
+
                                         } else {
-                                            //memory_label_counter += 1; // Não sei se isso é necessário, talvez isso cause um bug no futuro
                                             token_counter += 1;
                                         }
                                 
@@ -1292,10 +1290,18 @@ impl VirtualMachine {
                             if instruction.arg < 0 {
                                 logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
                             }
-                            let instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
-                            let instruction = self.memory.get(instruction_index as usize).unwrap();
-                            print!("{}", instruction.to_hash());
-                            io::stdout().flush().unwrap();
+
+                            match self.get_exactly_instruction_index_by_line(instruction.arg as u32) {
+                                Some(instruction_index) => {
+                                    let instruction = self.memory.get(instruction_index as usize).unwrap();
+                                    print!("{}", instruction.to_hash());
+                                    io::stdout().flush().unwrap();
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Could not find instruction at line {}", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
+                            }
+
                             self.pc += 1;
                         },
 
@@ -1303,10 +1309,17 @@ impl VirtualMachine {
                             if instruction.arg < 0 {
                                 logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
                             }
-                            let instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
-                            let instruction = self.memory.get(instruction_index as usize).unwrap();
-                            println!("{}", instruction.to_hash());
-                            io::stdout().flush().unwrap();
+
+                            match self.get_exactly_instruction_index_by_line(instruction.arg as u32) {
+                                Some(instruction_index) => {
+                                    let instruction = self.memory.get(instruction_index as usize).unwrap();
+                                    println!("{}", instruction.to_hash());
+                                    io::stdout().flush().unwrap();
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message(format!("Could not find instruction at line {}", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
+                            }
                             self.pc += 1;
                         },
 
@@ -1547,9 +1560,17 @@ impl VirtualMachine {
             break;
             }
         }
-        //print!("[ {} ]", closest_index);
-        //std::thread::sleep(std::time::Duration::from_millis(100));
+
         closest_index
+    }
+
+    fn get_exactly_instruction_index_by_line(&self, line: u32) -> Option<u32> {
+        for (index, instruction) in self.memory.iter().enumerate() {
+            if instruction.line == line {
+                return Some(index as u32);
+            }
+        }
+        None
     }
 }
 

@@ -41,6 +41,6 @@ NEWLINE: .ascii "\n"
     LODD NEWLINE
     PRINTACCHAR
 
-    SLEEPI 1000        # sleep thread for 1 second
+    SLEEPI 1000     # sleep thread for 1 second
 
-    JUMP 12          # jump to operation at line 12
+    JUMP 12         # jump to operation to line 12

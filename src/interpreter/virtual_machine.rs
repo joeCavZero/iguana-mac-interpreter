@@ -1568,6 +1568,10 @@ impl VirtualMachine {
         for (index, instruction) in self.memory.iter().enumerate() {
             if instruction.line == line {
                 return Some(index as u32);
+            } else if instruction.line > line {
+                break;
+            } else if index == self.memory.len() - 1 {
+                break;
             }
         }
         None

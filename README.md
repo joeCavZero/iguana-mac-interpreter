@@ -83,6 +83,9 @@ iguana info
      ( or iguana.app on MacOS or iguana on Linux )
      ```
 
+5. **Copy the binary to a convenient location**:
+   - Copy the binary to a location where you can easily access it, such as a directory in your system's PATH.
+   - You can also save the binary in the environment variable PATH, allowing you to run the program from any directory.
 
 ---
 
@@ -326,7 +329,7 @@ iguana info
 
 - **HALT**  
   **Behavior**: Stops the execution of the entire program.  
-  **Pseudo-behavior**: `halt`
+  **Pseudo-behavior**: `end_program`
 
 - **SLEEPD X**  
   **Behavior**: Pauses execution for the number of milliseconds specified by the value at address `X` in the stack.  

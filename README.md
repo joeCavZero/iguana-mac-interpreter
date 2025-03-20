@@ -181,31 +181,31 @@ iguana info
 
 - **JPOS X**  
   **Behavior**: Jumps to the instruction at line `X` if the accumulator (`ac`) is positive.  
-  **Pseudo-behavior**: `if ac >= 0: pc = instruction_on_line( X ), else: pc = pc + 1`
+  **Pseudo-behavior**: `if ac >= 0: pc = pc_of_instruction_on_line( X ), else: pc = pc + 1`
 
 - **JZER X**  
   **Behavior**: Jumps to the instruction at line `X` if the accumulator (`ac`) is zero.  
-  **Pseudo-behavior**: `if ac == 0: pc = instruction_on_line( X ), else: pc = pc + 1`
+  **Pseudo-behavior**: `if ac == 0: pc = pc_of_instruction_on_line( X ), else: pc = pc + 1`
 
 - **JUMP X**  
   **Behavior**: Unconditionally jumps to the instruction at line `X`.  
-  **Pseudo-behavior**: `pc = instruction_on_line( X )`
+  **Pseudo-behavior**: `pc = pc_of_instruction_on_line( X )`
 
 - **JNEG X**  
   **Behavior**: Jumps to the instruction at line `X` if the accumulator (`ac`) is negative.  
-  **Pseudo-behavior**: `if ac < 0: pc = instruction_on_line( X ), else: pc = pc + 1`
+  **Pseudo-behavior**: `if ac < 0: pc = pc_of_instruction_on_line( X ), else: pc = pc + 1`
 
 - **JNZE X**  
   **Behavior**: Jumps to the instruction at line `X` if the accumulator (`ac`) is not zero.  
-  **Pseudo-behavior**: `if ac != 0: pc = instruction_on_line( X ), else: pc = pc + 1`
+  **Pseudo-behavior**: `if ac != 0: pc = pc_of_instruction_on_line( X ), else: pc = pc + 1`
 
 - **CALL X**  
   **Behavior**: Calls a subroutine at line `X`, saving the return address on the stack.  
-  **Pseudo-behavior**: `sp = sp - 1; M[sp] = current_line + 1; pc = instruction_on_line( X )`
+  **Pseudo-behavior**: `sp = sp - 1; M[sp] = current_line + 1; pc = pc_of_instruction_on_line( X )`
 
 - **RETN**  
   **Behavior**: Returns from a subroutine by popping the return address from the stack.  
-  **Pseudo-behavior**: `pc = instruction_on_line( M[sp] ); sp = sp + 1`
+  **Pseudo-behavior**: `pc = pc_of_instruction_on_line( M[sp] ); sp = sp + 1`
 
 ## Bitwise Operations
 
@@ -317,11 +317,11 @@ iguana info
 
 - **PRINTLNINSTRUCTION X**  
   **Behavior**: Prints the instruction hash on line `X` with a line break.
-  **Pseudo-behavior**: `print( hash( instruction_on_line( X ) ) + '\n' )`
+  **Pseudo-behavior**: `print( hash( pc_of_instruction_on_line( X ) ) + '\n' )`
 
 - **PRINTINSTRUCTION X**  
   **Behavior**: Prints the instruction hash on line `X`.
-  **Pseudo-behavior**: `print( hash( instruction_on_line( X ) ) )`
+  **Pseudo-behavior**: `print( hash( pc_of_instruction_on_line( X ) ) )`
 
 
 
@@ -344,7 +344,7 @@ iguana info
 Here are some key details about the Iguana MAC Interpreter that you should know:
 
 ### **Stack Size**
-- The interpreter uses a fixed-size stack with a capacity of **32,768 items**. This means that the stack can hold up to 32,768 `i16` values at any given time.
+- The interpreter uses a fixed-size stack with a capacity of **32,768 items**. This means that the stack can hold up 32,768 `i16` values at any given time.
 - Exceeding this limit will result in a **stack overflow** or **stack pointer out-of-bounds error**.
 
 ### **Stack Growth Direction**

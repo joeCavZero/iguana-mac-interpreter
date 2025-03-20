@@ -289,7 +289,7 @@ impl VirtualMachine {
                                                         
                                                     } else {
 
-                                                        let aux_sp_address = match self.sp.checked_sub(values.len() as u32) {
+                                                        let aux_sp_address = match self.sp.checked_sub(1) {
                                                             Some(v) => v,
                                                             None => {
                                                                 logkit::exit_with_error_message("Stack overflow: no space left to insert .word or .byte");
@@ -732,6 +732,7 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Addd => {
+                            //println!("----> ADDD {}, AC={}", instruction.arg, self.ac);
                             match self.stack.get(instruction.arg as usize) {
                                 Some(value) => {
                                     if *value != 0 {
@@ -988,6 +989,7 @@ impl VirtualMachine {
                             };
                             self.sp += 1; // decrementa o sp
                             self.pc += 1;
+
                         },
                         Opcode::Retn => {   
 
@@ -1020,6 +1022,7 @@ impl VirtualMachine {
                             self.ac = self.sp as i16;
                             self.sp = tmp as u32;
                             self.pc += 1;
+                            
                         },
                         Opcode::Insp => {
                             match self.sp.checked_sub(instruction.arg as u32) {

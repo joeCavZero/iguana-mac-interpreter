@@ -120,11 +120,11 @@ impl Token {
     }
 
     pub fn is_hex_literal(&self) -> bool {
-        self.token.len() >= 3 && self.token.chars().nth(0) == Some('0') && self.token.chars().nth(1) == Some('x')
+        self.token.len() >= 3 && self.token.chars().nth(0) == Some('0') && ( self.token.chars().nth(1) == Some('x') || self.token.chars().nth(1) == Some('X') )
     }
 
     pub fn to_hex_literal(&self) -> Option<i16> {// if hex_number >= i16::MAX then None 
-        let hex_string = self.token.clone();
+        let hex_string = self.token.clone().to_lowercase();
         let mut hex_number: i16 = 0;
         let mut hex_counter = 2;
         while hex_counter < hex_string.len() {
@@ -139,12 +139,12 @@ impl Token {
                 Some('7') => 7,
                 Some('8') => 8,
                 Some('9') => 9,
-                Some('a') | Some('A') => 10,
-                Some('b') | Some('B') => 11,
-                Some('c') | Some('C') => 12,
-                Some('d') | Some('D') => 13,
-                Some('e') | Some('E') => 14,
-                Some('f') | Some('F') => 15,
+                Some('a') => 10,
+                Some('b') => 11,
+                Some('c') => 12,
+                Some('d') => 13,
+                Some('e') => 14,
+                Some('f') => 15,
                 _ => {
                     logkit::exit_with_positional_error_message("Invalid hexadecimal literal", self.line, self.col);
                     return None;

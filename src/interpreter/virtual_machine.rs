@@ -1601,18 +1601,23 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize, is_dot_byte: b
                     },
                     _ => {
                         if aux_raw_token.is_char_literal() {
-                            values.push(aux_raw_token.to_char_literal() as i16);
+                            let val = aux_raw_token.to_char_literal() as i16;
+                            if is_dot_byte {
+                                if val < 0 || val > 255 {
+                                    logkit::exit_with_positional_error_message("Value out of range (0...255)", aux_raw_token.line, aux_raw_token.col);
+                                }
+                            }
+                            values.push(val);
                             aux_value_counter += 1;
                         } else if aux_raw_token.is_hex_literal() {
                             let value_option = aux_raw_token.to_hex_literal();
                             match value_option {
-                                
-
                                 Some(value) => {
-                                    if is_dot_byte && (value < 0 || value > 255) {
-                                        logkit::exit_with_positional_error_message(format!("Expected a value between 0 and 255 for .byte, found {}", value).as_str(), aux_raw_token.line, aux_raw_token.col);
+                                    if is_dot_byte {
+                                        if value < 0 || value > 255 {
+                                            logkit::exit_with_positional_error_message("Value out of range (0...255)", aux_raw_token.line, aux_raw_token.col);
+                                        }
                                     }
-                                    
                                     values.push(value);
                                     aux_value_counter += 1;
                                 },
@@ -1624,10 +1629,11 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize, is_dot_byte: b
                             let value_option = aux_raw_token.to_binary_literal();
                             match value_option {
                                 Some(value) => {
-                                    if is_dot_byte && (value < 0 || value > 255) {
-                                        logkit::exit_with_positional_error_message(format!("Expected a value between 0 and 255 for .byte, found {}", value).as_str(), aux_raw_token.line, aux_raw_token.col);
+                                    if is_dot_byte {
+                                        if value < 0 || value > 255 {
+                                            logkit::exit_with_positional_error_message("Value out of range (0...255)", aux_raw_token.line, aux_raw_token.col);
+                                        }
                                     }
-
                                     values.push(value);
                                     aux_value_counter += 1;
                                 },
@@ -1639,15 +1645,24 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize, is_dot_byte: b
                             let value = aux_raw_token.get_token().parse::<i16>();
                             match value {
                                 Ok(v) => {
-                                    if is_dot_byte && (v < 0 || v > 255) {
-                                        logkit::exit_with_positional_error_message(format!("Expected a value between 0 and 255 for .byte, found {}", v).as_str(), aux_raw_token.line, aux_raw_token.col);
+                                    if is_dot_byte {
+                                        if v < 0 || v > 255 {
+                                            logkit::exit_with_positional_error_message("Value out of range (0...255)", aux_raw_token.line, aux_raw_token.col);
+                                        }
                                     }
-
                                     values.push(v);
                                     aux_value_counter += 1;
                                 },
                                 Err(_) => {
-                                    logkit::exit_with_positional_error_message(format!("Expected a valid number in range of -32768...32767, found {}", aux_raw_token.get_token()).as_str(), aux_raw_token.line, aux_raw_token.col);
+                                    if vector.get(aux_value_counter - 1).unwrap().get_token().as_str() == "," {
+                                        if is_dot_byte {
+                                            logkit::exit_with_positional_error_message("Expected a valid value in range of 0...255", aux_raw_token.line, aux_raw_token.col);
+                                        } else {
+                                            logkit::exit_with_positional_error_message("Expected a valid value in range of -32768...32767", aux_raw_token.line, aux_raw_token.col);
+                                        }
+                                    } else {
+                                        break 'aux_value_counter_loop;
+                                    }
                                     break 'aux_value_counter_loop;
                                 }
                             }
@@ -1658,5 +1673,6 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize, is_dot_byte: b
             None => { break 'aux_value_counter_loop; },
         }
     }
+    
     values
 }

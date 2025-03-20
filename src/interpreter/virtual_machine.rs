@@ -272,8 +272,14 @@ impl VirtualMachine {
                                                      */
 
                                                     let aux_value_counter = token_counter + 2; // <valor>
-                                                    let values: Vec<i16> = get_comma_separated_values(&raw_tokens_vector, aux_value_counter);
+                                                    let mut values: Vec<i16> = Vec::new();
+                                                    //let values: Vec<i16> = get_comma_separated_values(&raw_tokens_vector, aux_value_counter, false);
                                                     
+                                                    if next_raw_token.get_token() == ".word" {
+                                                        values = get_comma_separated_values(&raw_tokens_vector, aux_value_counter, false);
+                                                    } else if next_raw_token.get_token() == ".byte" {
+                                                        values = get_comma_separated_values(&raw_tokens_vector, aux_value_counter, true);
+                                                    }
 
                                                     if values.len() == 0 {
                                                         if next_raw_token.get_token() == ".word" {
@@ -283,6 +289,7 @@ impl VirtualMachine {
                                                         }
                                                         
                                                     } else {
+
                                                         self.symbol_table.insert(
                                                             label,
                                                             self.sp -1,
@@ -1582,7 +1589,7 @@ fn get_nth_token(raw_tokens: &Vec<Token>, n: usize) -> Option<Token> {
     raw_tokens.get(n).cloned()
 }
 
-fn get_comma_separated_values(vector: &Vec<Token>, offset: usize) -> Vec<i16> {
+fn get_comma_separated_values(vector: &Vec<Token>, offset: usize, is_dot_byte: bool) -> Vec<i16> {
     let mut values = Vec::new();
     let mut aux_value_counter = offset;
     'aux_value_counter_loop: while aux_value_counter < vector.len() {
@@ -1600,7 +1607,13 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize) -> Vec<i16> {
                         } else if aux_raw_token.is_hex_literal() {
                             let value_option = aux_raw_token.to_hex_literal();
                             match value_option {
+                                
+
                                 Some(value) => {
+                                    if is_dot_byte && (value < 0 || value > 255) {
+                                        logkit::exit_with_positional_error_message(format!("Expected a value between 0 and 255 for .byte, found {}", value).as_str(), aux_raw_token.line, aux_raw_token.col);
+                                    }
+                                    
                                     values.push(value);
                                     aux_value_counter += 1;
                                 },
@@ -1612,6 +1625,10 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize) -> Vec<i16> {
                             let value_option = aux_raw_token.to_binary_literal();
                             match value_option {
                                 Some(value) => {
+                                    if is_dot_byte && (value < 0 || value > 255) {
+                                        logkit::exit_with_positional_error_message(format!("Expected a value between 0 and 255 for .byte, found {}", value).as_str(), aux_raw_token.line, aux_raw_token.col);
+                                    }
+
                                     values.push(value);
                                     aux_value_counter += 1;
                                 },
@@ -1623,6 +1640,10 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize) -> Vec<i16> {
                             let value = aux_raw_token.get_token().parse::<i16>();
                             match value {
                                 Ok(v) => {
+                                    if is_dot_byte && (v < 0 || v > 255) {
+                                        logkit::exit_with_positional_error_message(format!("Expected a value between 0 and 255 for .byte, found {}", v).as_str(), aux_raw_token.line, aux_raw_token.col);
+                                    }
+
                                     values.push(v);
                                     aux_value_counter += 1;
                                 },

@@ -273,7 +273,6 @@ impl VirtualMachine {
 
                                                     let aux_value_counter = token_counter + 2; // <valor>
                                                     let mut values: Vec<i16> = Vec::new();
-                                                    //let values: Vec<i16> = get_comma_separated_values(&raw_tokens_vector, aux_value_counter, false);
                                                     
                                                     if next_raw_token.get_token() == ".word" {
                                                         values = get_comma_separated_values(&raw_tokens_vector, aux_value_counter, false);
@@ -1648,6 +1647,7 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize, is_dot_byte: b
                                     aux_value_counter += 1;
                                 },
                                 Err(_) => {
+                                    logkit::exit_with_positional_error_message(format!("Expected a valid number in range of -32768...32767, found {}", aux_raw_token.get_token()).as_str(), aux_raw_token.line, aux_raw_token.col);
                                     break 'aux_value_counter_loop;
                                 }
                             }

@@ -1297,7 +1297,7 @@ impl VirtualMachine {
                                 logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
                             }
 
-                            match self.get_instruction_index_on_exactly_line(instruction.arg as u32) {
+                            match self.get_instruction_index_on_on_line_excepts_the_final_halt(instruction.arg as u32) {
                                 Some(instruction_index) => {
                                     let instruction = self.memory.get(instruction_index as usize).unwrap();
                                     print!("{}", instruction.to_hash());
@@ -1316,7 +1316,7 @@ impl VirtualMachine {
                                 logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
                             }
 
-                            match self.get_instruction_index_on_exactly_line(instruction.arg as u32) {
+                            match self.get_instruction_index_on_on_line_excepts_the_final_halt(instruction.arg as u32) {
                                 Some(instruction_index) => {
                                     let instruction = self.memory.get(instruction_index as usize).unwrap();
                                     println!("{}", instruction.to_hash());
@@ -1562,25 +1562,31 @@ impl VirtualMachine {
         let mut closest_index: u32 = 0;
         for (index, instruction) in self.memory.iter().enumerate() {
             if instruction.line >= line {
-            closest_index = index as u32;
-            break;
+                closest_index = index as u32;
+                break;
             }
         }
 
         closest_index
     }
 
-    fn get_instruction_index_on_exactly_line(&self, line: u32) -> Option<u32> {
+    fn get_instruction_index_on_on_line_excepts_the_final_halt(&self, line: u32) -> Option<u32> {
+        let mut closest_option = None;
         for (index, instruction) in self.memory.iter().enumerate() {
-            if instruction.line == line {
-                return Some(index as u32);
-            } else if instruction.line > line {
-                break;
-            } else if index == self.memory.len() - 1 {
+            /*
+             * This is because i do not want to etect the last final HALT 
+             * instruction as the closest instruction to the line
+             */
+            if index >= self.memory.len() - 1 {
+                return None;
+            } else if instruction.line >= line {
+                closest_option = Some(index as u32);
                 break;
             }
+
+            
         }
-        None
+        closest_option
     }
 }
 

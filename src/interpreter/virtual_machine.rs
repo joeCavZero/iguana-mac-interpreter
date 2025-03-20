@@ -257,7 +257,7 @@ impl VirtualMachine {
                                         
                                         let next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter+1);
                                         if next_raw_token_option.is_none() {
-                                            logkit::exit_with_positional_error_message("Expected .word, .byte, .ascii or .asciiz after label", actual_raw_token.line, actual_raw_token.col);
+                                            logkit::exit_with_positional_error_message("Expected .word, .byte, .space, .ascii or .asciiz after label", actual_raw_token.line, actual_raw_token.col);
                                         } else {
                                             
                                             let next_raw_token = next_raw_token_option.unwrap();
@@ -289,9 +289,17 @@ impl VirtualMachine {
                                                         
                                                     } else {
 
+                                                        let aux_sp_address = match self.sp.checked_sub(values.len() as u32) {
+                                                            Some(v) => v,
+                                                            None => {
+                                                                logkit::exit_with_error_message("Stack overflow: no space left to insert .word or .byte");
+                                                                0
+                                                            }
+                                                        };
+
                                                         self.symbol_table.insert(
                                                             label,
-                                                            self.sp -1,
+                                                            aux_sp_address,
                                                         );
 
                                                         for v in &values {
@@ -311,10 +319,16 @@ impl VirtualMachine {
                                                             if next_next_raw_token.is_string_literal()  {
                                                                 match next_next_raw_token.to_string_literal() {
                                                                     Some(string_literal) => {
-                                                                        
+                                                                        let aux_sp_address = match self.sp.checked_sub(1) {
+                                                                            Some(v) => v,
+                                                                            None => {
+                                                                                logkit::exit_with_error_message("Stack overflow: no space left to insert string literal");
+                                                                                0
+                                                                            }
+                                                                        };
                                                                         self.symbol_table.insert(
                                                                             label,
-                                                                            self.sp -1,
+                                                                            aux_sp_address,
                                                                         );
                                                                         
                                                                         
@@ -341,9 +355,17 @@ impl VirtualMachine {
 
                                                                          for b in string_literal_bytes {
                                                                             if self.sp == 0 {
-                                                                                logkit::exit_with_error_message("Stack overflow: no space left to insert string literal");
+                                                                                logkit::exit_with_positional_error_message("Stack overflow: no space left to insert string literal", next_next_raw_token.line, next_next_raw_token.col);
                                                                             }
-                                                                            self.sp -= 1;
+                                                                            //self.sp -= 1;
+                                                                            match self.sp.checked_sub(1) {
+                                                                                Some(v) => {
+                                                                                    self.sp = v;
+                                                                                },
+                                                                                None => {
+                                                                                    logkit::exit_with_positional_error_message("Stack overflow: no space left to insert string literal", next_next_raw_token.line, next_next_raw_token.col);
+                                                                                }
+                                                                            }
                                                                             self.stack[self.sp as usize] = b as i16;
                                                                         }
 
@@ -351,15 +373,15 @@ impl VirtualMachine {
                                                                         continue;
                                                                     },
                                                                     None => {
-                                                                        logkit::exit_with_positional_error_message("Expect a valid string after .ascii or asciiz", actual_raw_token.line, actual_raw_token.col);
+                                                                        logkit::exit_with_positional_error_message("Expect a valid string after .ascii or asciiz", next_next_raw_token.line, next_next_raw_token.col);
                                                                     }
                                                                 }
                                                             } else {
-                                                                logkit::exit_with_positional_error_message("Expect a valid string after .ascii or asciiz", actual_raw_token.line, actual_raw_token.col);
+                                                                logkit::exit_with_positional_error_message("Expect a valid string after .ascii or asciiz", next_next_raw_token.line, next_next_raw_token.col);
                                                             }
                                                         },
                                                         None => {
-                                                            logkit::exit_with_positional_error_message("Expect a valid string after .ascii or asciiz", actual_raw_token.line, actual_raw_token.col);
+                                                            logkit::exit_with_positional_error_message("Expect a valid string after .ascii or asciiz", next_raw_token.line, next_raw_token.col);
                                                         }
                                                     }
                                                 },
@@ -387,7 +409,7 @@ impl VirtualMachine {
                                                                         value = v;
                                                                     },
                                                                     None => {
-                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space", actual_raw_token.line, actual_raw_token.col);
+                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space", next_next_raw_token.line, next_next_raw_token.col);
                                                                     }
                                                                 }
                                                             } else if next_next_raw_token.is_binary_literal() {
@@ -397,7 +419,7 @@ impl VirtualMachine {
                                                                         value = v;
                                                                     },
                                                                     None => {
-                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space", actual_raw_token.line, actual_raw_token.col);
+                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space", next_next_raw_token.line, next_next_raw_token.col);
                                                                     }
                                                                 } 
                                                             } else {
@@ -407,21 +429,29 @@ impl VirtualMachine {
                                                                         value = v;
                                                                     },
                                                                     Err(_) => {
-                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space", actual_raw_token.line, actual_raw_token.col);
+                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space", next_next_raw_token.line, next_next_raw_token.col);
                                                                     }
                                                                 }
                                                             }
                                                                         
                                                             if value < 0 {
-                                                                logkit::exit_with_positional_error_message("Expected a positive value after .space", actual_raw_token.line, actual_raw_token.col);
+                                                                logkit::exit_with_positional_error_message("Expected a positive value after .space", next_next_raw_token.line, next_next_raw_token.col);
                                                             }
                                                             if value % 2 != 0 {
-                                                                logkit::exit_with_positional_error_message("Expected an even (multiple of 2) value after .space, this ISA only supports 16 bits stack values", actual_raw_token.line, actual_raw_token.col);
+                                                                logkit::exit_with_positional_error_message("Expected an even (multiple of 2) value after .space, this ISA only supports 16 bits stack values", next_next_raw_token.line, next_next_raw_token.col);
                                                             }
-                                                                        
+                                                            
+                                                            let aux_sp_address = match self.sp.checked_sub(1) {
+                                                                Some(v) => v,
+                                                                None => {
+                                                                    logkit::exit_with_error_message("Stack overflow: no space left to insert .space");
+                                                                    0
+                                                                }
+                                                            };
+
                                                             self.symbol_table.insert(
                                                                 label,
-                                                                self.sp -1,
+                                                                aux_sp_address,
                                                             );
 
                                                             for _ in 0..(value/2) {
@@ -436,18 +466,18 @@ impl VirtualMachine {
                                                             
                                                         },
                                                         None => {
-                                                            logkit::exit_with_positional_error_message("Expected a valid value after .space", actual_raw_token.line, actual_raw_token.col);
+                                                            logkit::exit_with_positional_error_message("Expected a valid value after .space", next_raw_token.line, next_raw_token.col);
                                                         }
                                                     }
                                                 }
                                                 _ => {
-                                                    logkit::exit_with_positional_error_message("Expected .word, .byte, .ascii or .asciiz after label", actual_raw_token.line, actual_raw_token.col);
+                                                    logkit::exit_with_positional_error_message("Expected .word, .byte, .ascii or .asciiz after label", next_raw_token.line, next_raw_token.col);
                                                 }
                                             }
                                 
                                         }
                                     } else {
-                                        logkit::exit_with_positional_error_message("Expected a valid label or a valid value", actual_raw_token.line, actual_raw_token.col);
+                                        logkit::exit_with_positional_error_message("Expected a valid label or a valid value, labels cannot start with numbers", actual_raw_token.line, actual_raw_token.col);
                                     }
                                 },
                                 Section::Text => {
@@ -492,11 +522,11 @@ impl VirtualMachine {
                                                     token_counter += 1;
                                                     continue;
                                                 } else {
-                                                    logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
+                                                    logkit::exit_with_positional_error_message("Expected an instruction after label", next_raw_token.line, next_raw_token.col);
                                                 }
                                             },
                                             None => {
-                                                logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
+                                                logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col); 
                                             }
                                         }
                                     } else {
@@ -566,7 +596,7 @@ impl VirtualMachine {
                                                                         token_counter += 2;
                                                                     },
                                                                     None => {
-                                                                        logkit::exit_with_positional_error_message(format!("Error: Label {} not found on line {}", label, next_raw_token.line).as_str(), actual_raw_token.line, actual_raw_token.col);
+                                                                        logkit::exit_with_positional_error_message(format!("Label {} not found in symbol table", label).as_str(), next_raw_token.line, next_raw_token.col);
                                                                     }
                                                                 }
                                                             } else {
@@ -586,7 +616,7 @@ impl VirtualMachine {
                                                                             token_counter += 2;
                                                                         },
                                                                         None => {
-                                                                            logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", actual_raw_token.line, actual_raw_token.col);
+                                                                            logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", next_raw_token.line, next_raw_token.col);
                                                                         }
                                                                     }
                                                                 } else if next_raw_token.is_binary_literal() {
@@ -605,7 +635,7 @@ impl VirtualMachine {
                                                                             token_counter += 2;
                                                                         },
                                                                         None => {
-                                                                            logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", actual_raw_token.line, actual_raw_token.col);
+                                                                            logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", next_raw_token.line, next_raw_token.col);
                                                                         }
                                                                     }
                                                                 } else {
@@ -624,7 +654,7 @@ impl VirtualMachine {
                                                                             token_counter += 2;
                                                                         },
                                                                         Err(_) => {
-                                                                            logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", actual_raw_token.line, actual_raw_token.col);
+                                                                            logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", next_raw_token.line, next_raw_token.col);
                                                                         }
                                                                     }
                                                                 }
@@ -983,6 +1013,9 @@ impl VirtualMachine {
                             
                         },
                         Opcode::Swap => {
+                            if self.ac < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive value in AC to swap with SP", instruction.line, instruction.col);
+                            }
                             let tmp = self.ac;
                             self.ac = self.sp as i16;
                             self.sp = tmp as u32;

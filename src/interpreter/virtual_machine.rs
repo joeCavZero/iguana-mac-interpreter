@@ -32,7 +32,7 @@ impl VirtualMachine {
             file_path: file_path.to_string(),
             ac: 0,
             pc: 0,
-            sp: STACK_SIZE as u32,
+            sp: STACK_SIZE as u32 - 1,
             memory: Vec::new(),
             stack: [0; STACK_SIZE],
             symbol_table: HashMap::new(),
@@ -732,7 +732,6 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Addd => {
-                            //println!("----> ADDD {}, AC={}", instruction.arg, self.ac);
                             match self.stack.get(instruction.arg as usize) {
                                 Some(value) => {
                                     if *value != 0 {
@@ -1025,33 +1024,31 @@ impl VirtualMachine {
                             
                         },
                         Opcode::Insp => {
-                            match self.sp.checked_sub(instruction.arg as u32) {
+                            match (self.sp as i64).checked_sub(instruction.arg as i64) {
                                 Some(aux) => {
-                                    self.sp = aux;
+                                    if aux < 0 || aux >= STACK_SIZE as i64 {
+                                        logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
+                                    }
+                                    self.sp = aux as u32;
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
                                 }
-                            }
-
-                            if self.sp as usize >= STACK_SIZE {
-                                logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
                             }
 
                             self.pc += 1;
                         },
                         Opcode::Desp => {
-                            match self.sp.checked_add(instruction.arg as u32) {
+                            match (self.sp as i64).checked_add(instruction.arg as i64) {
                                 Some(aux) => {
-                                    self.sp = aux;
+                                    if aux < 0 || aux >= STACK_SIZE as i64 {
+                                        logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
+                                    }
+                                    self.sp = aux as u32;
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
                                 }
-                            }
-
-                            if self.sp as usize >= STACK_SIZE {
-                                logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
                             }
 
                             self.pc += 1;
@@ -1529,6 +1526,10 @@ impl VirtualMachine {
                             std::thread::sleep(std::time::Duration::from_millis(instruction.arg as u64));
                             self.pc += 1;
                         }
+                    }
+                    
+                    if self.sp >= STACK_SIZE as u32 {
+                        logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
                     }
                 },
                 None => {

@@ -1,19 +1,19 @@
 # program to find the biggest value between two numbers
 .data
-VAL1: .word 10
-VAL2: .word 257
-BIGGER: .word 0
+VAL1: .word 100
+VAL2: .word 1000
+BIGGER: .space 2
 
 .text
     LODD VAL1
     SUBD VAL2
-    JPOS LABEL1
+    JPOS VAL1_IS_BIGGER
 
     LODD VAL2 
     STOD BIGGER
     JUMP PRINT_AND_END
 
-LABEL1:
+VAL1_IS_BIGGER:
     LODD VAL1  
     STOD BIGGER   
 

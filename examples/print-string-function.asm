@@ -36,7 +36,7 @@ PRINT_STRING:
   PRINT_STRING_LOOP:        
     LODD PRINT_STRING_POINTER       # ac = *PRINT_STRING_POINTER
     SWAP                            # sp = ac ; ac = sp
-    POP                             # ac = STRING[i]
+    LODL 0                          # ac = STRING[i]
 
     JZER PRINT_STRING_END           # if ac == 0 goto PRINT_STRING_END
     PRINTACCHAR                     # print ac as a char

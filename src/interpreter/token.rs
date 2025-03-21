@@ -126,7 +126,7 @@ impl Token {
         self.token.len() >= 3 && self.token.chars().nth(0) == Some('0') && ( self.token.chars().nth(1) == Some('x') || self.token.chars().nth(1) == Some('X') )
     }
 
-    pub fn to_hex_literal(&self) -> Option<i16> {// if hex_number >= i16::MAX then None 
+    pub fn to_hex_literal_i16(&self) -> Option<i16> {// if hex_number >= i16::MAX then None 
         let hex_string = self.token.clone().to_lowercase();
         let mut hex_number: i16 = 0;
         let mut hex_counter = 2;
@@ -174,11 +174,60 @@ impl Token {
         Some(hex_number)
 
     }
+    
+    pub fn to_hex_literal_i32(&self) -> Option<i32> {
+        let hex_literal = self.token.clone().to_lowercase();
+        let mut hex_number: i32 = 0;
+        let mut hex_counter = 2;
+        while hex_counter < hex_literal.len() {
+            let hex_digit = match hex_literal.chars().nth(hex_counter) {
+                Some('0') => 0,
+                Some('1') => 1,
+                Some('2') => 2,
+                Some('3') => 3,
+                Some('4') => 4,
+                Some('5') => 5,
+                Some('6') => 6,
+                Some('7') => 7,
+                Some('8') => 8,
+                Some('9') => 9,
+                Some('a') => 10,
+                Some('b') => 11,
+                Some('c') => 12,
+                Some('d') => 13,
+                Some('e') => 14,
+                Some('f') => 15,
+                _ => {
+                    logkit::exit_with_positional_error_message("Invalid hexadecimal literal", self.line, self.col);
+                    return None;
+                }
+            };
+            // its like: hex_number = hex_number * 16 + hex_digit;
+            match hex_number.checked_mul(16) {
+                Some(result) => {
+                    match result.checked_add(hex_digit) {
+                        Some(result) => hex_number = result,
+                        None => {
+                            logkit::exit_with_positional_error_message("Hexadecimal literal overflow, value must be between 0x0 and 0x7fffffff", self.line, self.col);
+                            return None;
+                        }
+                    }
+                }
+                None => {
+                    logkit::exit_with_positional_error_message("Hexadecimal literal overflow, value must be between 0x0 and 0x7fffffff", self.line, self.col);
+                    return None;
+                }
+            }
+            hex_counter += 1;
+        }
+        Some(hex_number)
+    }
+
     pub fn is_binary_literal(&self) -> bool {
         self.token.len() >= 3 && self.token.chars().nth(0) == Some('0') && self.token.chars().nth(1) == Some('b')
     }
 
-    pub fn to_binary_literal(&self) -> Option<i16> {// if binary_number >= i16::MAX then None 
+    pub fn to_binary_literal_i16(&self) -> Option<i16> {// if binary_number >= i16::MAX then None 
         let binary_string = self.token.clone();
         let mut binary_number: i16 = 0;
         let mut binary_counter = 2;
@@ -211,4 +260,39 @@ impl Token {
         }
         Some(binary_number)
     }
+
+    pub fn to_binary_literal_i32(&self) -> Option<i32> {// if binary_number >= i16::MAX then None 
+        let binary_string = self.token.clone();
+        let mut binary_number: i32 = 0;
+        let mut binary_counter = 2;
+        while binary_counter < binary_string.len() {
+            let binary_digit = match binary_string.chars().nth(binary_counter) {
+                Some('0') => 0,
+                Some('1') => 1,
+                _ => {
+                    logkit::exit_with_positional_error_message("Invalid binary literal", self.line, self.col);
+                    return None;
+                }
+            };
+            //its like: binary_number = binary_number * 2 + binary_digit;
+            match binary_number.checked_mul(2) {
+                Some(result) => {
+                    match result.checked_add(binary_digit) {
+                        Some(result) => binary_number = result,
+                        None => {
+                            logkit::exit_with_positional_error_message("Binary literal overflow, value must be between 0b0 and 0b1111111111111111111111111111111", self.line, self.col);
+                            return None;
+                        }
+                    }
+                }
+                None => {
+                    logkit::exit_with_positional_error_message("Binary literal overflow, value must be between 0b0 and 0b111111111111111", self.line, self.col);
+                    return None;
+                }
+            }
+            binary_counter += 1;
+        }
+        Some(binary_number)
+    }
+
 }

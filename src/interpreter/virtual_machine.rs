@@ -226,6 +226,8 @@ impl VirtualMachine {
         // ==== PRIMEIRA PASSAGEM ====
         let mut section = Section::Text;
         let mut last_line_initialized = 0;
+        let mut is_data_memory_initialized = false;
+
         let mut token_counter = 0;
         'token_counter_loop: while token_counter < raw_tokens_vector.len() {
             let actual_raw_token_option = raw_tokens_vector.get(token_counter).cloned();
@@ -289,12 +291,18 @@ impl VirtualMachine {
                                                         
                                                     } else {
 
-                                                        let aux_sp_address = match self.sp.checked_sub(1) {
+                                                        let mut aux_sp_address = match self.sp.checked_sub(1) {
                                                             Some(v) => v,
                                                             None => {
                                                                 logkit::exit_with_error_message("Stack overflow: no space left to insert .word or .byte");
                                                                 0
                                                             }
+                                                        };
+
+                                                        aux_sp_address = if is_data_memory_initialized {
+                                                            aux_sp_address
+                                                        } else {
+                                                            self.sp
                                                         };
 
                                                         self.symbol_table.insert(
@@ -303,8 +311,36 @@ impl VirtualMachine {
                                                         );
 
                                                         for v in &values {
-                                                            self.sp -= 1;
-                                                            self.stack[self.sp as usize] = v.clone();
+                                                            let aux_sp_value = match self.sp.checked_sub(1) {
+                                                                Some(v) => v,
+                                                                None => {
+                                                                    if next_raw_token.get_token() == ".word" {
+                                                                        logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .word", actual_raw_token.line, actual_raw_token.col);
+                                                                    } else if next_raw_token.get_token() == ".byte" {
+                                                                        logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .byte", actual_raw_token.line, actual_raw_token.col);
+                                                                    }
+                                                                    0
+                                                                }
+                                                            }; 
+                                                            
+                                                            if is_data_memory_initialized == true {
+                                                                self.sp = aux_sp_value;
+                                                            }
+
+                                                            match self.stack.get_mut(self.sp as usize) {
+                                                                Some(stack_item) => {
+                                                                    *stack_item = v.clone();
+                                                                    is_data_memory_initialized = true;
+                                                                    
+                                                                },
+                                                                None => {
+                                                                    if next_raw_token.get_token() == ".word" {
+                                                                        logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .word", actual_raw_token.line, actual_raw_token.col);
+                                                                    } else if next_raw_token.get_token() == ".byte" {
+                                                                        logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .byte", actual_raw_token.line, actual_raw_token.col);
+                                                                    }
+                                                                }
+                                                            }
                                                         }
 
                                                         token_counter += values.len()*2 + 1;
@@ -319,13 +355,20 @@ impl VirtualMachine {
                                                             if next_next_raw_token.is_string_literal()  {
                                                                 match next_next_raw_token.to_string_literal() {
                                                                     Some(string_literal) => {
-                                                                        let aux_sp_address = match self.sp.checked_sub(1) {
+                                                                        let mut aux_sp_address = match self.sp.checked_sub(1) {
                                                                             Some(v) => v,
                                                                             None => {
                                                                                 logkit::exit_with_error_message("Stack overflow: no space left to insert string literal");
                                                                                 0
                                                                             }
                                                                         };
+
+                                                                        aux_sp_address = if is_data_memory_initialized {
+                                                                            aux_sp_address
+                                                                        } else {
+                                                                            self.sp
+                                                                        };
+
                                                                         self.symbol_table.insert(
                                                                             label,
                                                                             aux_sp_address,
@@ -354,19 +397,32 @@ impl VirtualMachine {
                                                                          */
 
                                                                          for b in string_literal_bytes {
-                                                                            if self.sp == 0 {
+                                                                            if self.sp <= 0 {
                                                                                 logkit::exit_with_positional_error_message("Stack overflow: no space left to insert string literal", next_next_raw_token.line, next_next_raw_token.col);
                                                                             }
-                                                                            //self.sp -= 1;
-                                                                            match self.sp.checked_sub(1) {
-                                                                                Some(v) => {
-                                                                                    self.sp = v;
+
+                                                                            let aux_sp_value = match self.sp.checked_sub(1) {
+                                                                                Some(v) => v,
+                                                                                None => {
+                                                                                    logkit::exit_with_positional_error_message("Stack overflow: no space left to insert string literal", next_next_raw_token.line, next_next_raw_token.col);
+                                                                                    0
+                                                                                }
+                                                                            };
+
+                                                                            if is_data_memory_initialized == true {
+                                                                                self.sp = aux_sp_value;
+                                                                            }
+
+                                                                            match self.stack.get_mut(self.sp as usize) {
+                                                                                Some(stack_item) => {
+                                                                                    
+                                                                                    *stack_item = b as i16;
+                                                                                    is_data_memory_initialized = true;
                                                                                 },
                                                                                 None => {
                                                                                     logkit::exit_with_positional_error_message("Stack overflow: no space left to insert string literal", next_next_raw_token.line, next_next_raw_token.col);
                                                                                 }
                                                                             }
-                                                                            self.stack[self.sp as usize] = b as i16;
                                                                         }
 
                                                                         token_counter += 3;
@@ -400,36 +456,36 @@ impl VirtualMachine {
                                                     let next_next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter+2);
                                                     match next_next_raw_token_option {
                                                         Some(next_next_raw_token) => {
-                                                            let mut value = 0;
+                                                            let mut value: i32 = 0;
                                                             if next_next_raw_token.is_hex_literal() {
                                                                 
-                                                                let hex_value_result = next_next_raw_token.to_hex_literal();
+                                                                let hex_value_result = next_next_raw_token.to_hex_literal_i32();
                                                                 match hex_value_result {
                                                                     Some(v) => {
                                                                         value = v;
                                                                     },
                                                                     None => {
-                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space", next_next_raw_token.line, next_next_raw_token.col);
+                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space in range of (--2_147_483_648...2_147_483_647)", next_next_raw_token.line, next_next_raw_token.col);
                                                                     }
                                                                 }
                                                             } else if next_next_raw_token.is_binary_literal() {
-                                                                let binary_value_result = next_next_raw_token.to_binary_literal();
+                                                                let binary_value_result = next_next_raw_token.to_binary_literal_i32();
                                                                 match binary_value_result {
                                                                     Some(v) => {
                                                                         value = v;
                                                                     },
                                                                     None => {
-                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space", next_next_raw_token.line, next_next_raw_token.col);
+                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space in range of (--2_147_483_648...2_147_483_647)", next_next_raw_token.line, next_next_raw_token.col);
                                                                     }
                                                                 } 
                                                             } else {
-                                                                let value_result = next_next_raw_token.get_token().parse::<i16>();
+                                                                let value_result = next_next_raw_token.get_token().parse::<i32>();
                                                                 match value_result {
                                                                     Ok(v) => {
                                                                         value = v;
                                                                     },
                                                                     Err(_) => {
-                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space", next_next_raw_token.line, next_next_raw_token.col);
+                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space in range of (--2_147_483_648...2_147_483_647)", next_next_raw_token.line, next_next_raw_token.col);
                                                                     }
                                                                 }
                                                             }
@@ -455,10 +511,17 @@ impl VirtualMachine {
                                                             );
 
                                                             for _ in 0..(value/2) {
-                                                                if self.sp == 0 {
+                                                                if self.sp <= 0 {
                                                                     logkit::exit_with_error_message("Stack overflow: no space left to insert .space");
                                                                 }
-                                                                self.sp -= 1;
+                                                                
+                                                                self.sp = match self.sp.checked_sub(1) {
+                                                                    Some(v) => v,
+                                                                    None => {
+                                                                        logkit::exit_with_error_message("Stack overflow: no space left to insert .space");
+                                                                        0
+                                                                    }
+                                                                };
                                                             }
                                                             
                                                             token_counter += 3;
@@ -601,7 +664,7 @@ impl VirtualMachine {
                                                                 }
                                                             } else {
                                                                 if next_raw_token.is_hex_literal() {
-                                                                    let value_result = next_raw_token.to_hex_literal();
+                                                                    let value_result = next_raw_token.to_hex_literal_i16();
                                                                     match value_result {
                                                                         Some(value) => {
                                                                             self.memory.push(
@@ -620,7 +683,7 @@ impl VirtualMachine {
                                                                         }
                                                                     }
                                                                 } else if next_raw_token.is_binary_literal() {
-                                                                    let value_result = next_raw_token.to_binary_literal();
+                                                                    let value_result = next_raw_token.to_binary_literal_i16();
                                                                     match value_result {
                                                                         Some(value) => {
                                                                             self.memory.push(
@@ -1087,7 +1150,7 @@ impl VirtualMachine {
                             if address_found < 0 || address_found >= STACK_SIZE as i64 {
                                 logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", address_found).as_str(), instruction.line, instruction.col);
                             }
-
+                            
                             match self.stack.get(address_found as usize) {
                                 Some(value) => {
                                     println!("{}", *value);
@@ -1628,7 +1691,7 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize, is_dot_byte: b
                             values.push(val);
                             aux_value_counter += 1;
                         } else if aux_raw_token.is_hex_literal() {
-                            let value_option = aux_raw_token.to_hex_literal();
+                            let value_option = aux_raw_token.to_hex_literal_i16();
                             match value_option {
                                 Some(value) => {
                                     if is_dot_byte {
@@ -1644,7 +1707,7 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize, is_dot_byte: b
                                 }
                             }
                         } else if aux_raw_token.is_binary_literal() {
-                            let value_option = aux_raw_token.to_binary_literal();
+                            let value_option = aux_raw_token.to_binary_literal_i16();
                             match value_option {
                                 Some(value) => {
                                     if is_dot_byte {

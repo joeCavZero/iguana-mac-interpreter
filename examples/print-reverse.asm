@@ -12,7 +12,7 @@
 REACH_TO_LAST_CHAR_LOOP:
     LODD LAST_CHAR_POINTER          # ac = *LAST_CHAR_POINTER
     SWAP                            # sp = ac ; ac = sp
-    POP                             # ac = string[i]
+    LODL 0                          # ac = string[i]
     JZER PRINT                      # if ac == \0 goto PRINT
 
     LODD LAST_CHAR_POINTER          # ac = *LAST_CHAR_POINTER
@@ -26,7 +26,7 @@ PRINT:
 
     LODD LAST_CHAR_POINTER          # ac = *LAST_CHAR_POINTER
     SWAP                            # sp = ac ; ac = sp
-    POP                             # ac = string[i]
+    LODL 0                          # ac = string[i]
 
     PRINTACCHAR                     # print ac as a char
 
@@ -38,7 +38,7 @@ PRINT:
 PRINT_FIRST_CHAR:
     LODD STRING_PTR                 # ac = *STRING_PTR
     SWAP                            # sp = ac ; ac = sp
-    POP                             # ac = string[0]
+    LODL 0                          # ac = string[0]
     PRINTACCHAR                     # print ac as a char
     JUMP END                        # goto END
 END:

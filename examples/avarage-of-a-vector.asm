@@ -14,7 +14,7 @@
 LOOP:
     LODD VECTOR_POINTER     # ac = *VECTOR_POINTER
     SWAP                    # ac = sp; sp = ac
-    POP                     # ac = VECTOR[i]
+    LODL 0                  # ac = VECTOR[i]
 
     ADDD SUM                # ac = ac + *SUM
     STOD SUM                # *SUM = ac

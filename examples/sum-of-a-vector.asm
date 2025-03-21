@@ -14,7 +14,7 @@
 LOOP:
     LODD AUX            # ac = *AUX
     SWAP                # sp = ac ; ac = sp
-    POP                 # ac = VECTOR[i]
+    LODL 0              # ac = VECTOR[i]
     PRINTAC             # print ac as a number
     ADDD SUM            # ac = ac + SUM
     STOD SUM            # *SUM = ac

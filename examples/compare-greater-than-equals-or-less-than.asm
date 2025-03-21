@@ -32,7 +32,7 @@ PRINT_AND_END:
   LOOP:
     LODD STRING_POINTER     # ac = *STRING_POINTER
     SWAP                    # sp = ac ; ac = sp
-    POP                     # ac = STRING[i]
+    LODL 0                  # ac = STRING[i]
     JZER END                # if ac == \0 goto END
     PRINTACCHAR
     LODD STRING_POINTER     # ac = *STRING_POINTER

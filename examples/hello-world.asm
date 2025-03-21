@@ -10,7 +10,7 @@ MAIN:
 LOOP:
     LODD CHAR_POINTER   # ac = *CHAR_POINTER
     SWAP                # sp = ac ; ac = sp
-    POP                 # ac = *sp ; sp = sp + 1 (decrement sp)
+    LODL 0              # ac = *sp
     JZER END            # if ac == 0 goto END
     PRINTACCHAR         # print ac as a char
     LODD CHAR_POINTER   # ac = *CHAR_POINTER

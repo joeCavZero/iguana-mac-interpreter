@@ -11,31 +11,31 @@ NEWLINE: .ascii "\n"
 .text
     LOCO STRING     # operation at line 12
     SWAP            # operation at line 13
-    POP             # operation at line 14
+    LODL 0          # operation at line 14
     PRINTACCHAR     # operation at line 15
     
     LOCO STRING     # operation at line 17
     SUBD ONE        # [...]
     SWAP            
-    POP             
+    LODL 0             
     PRINTACCHAR
 
     LOCO STRING
     SUBD ONE SUBD ONE
     SWAP
-    POP
+    LODL 0  
     PRINTACCHAR
 
     LOCO STRING
     SUBD ONE SUBD ONE SUBD ONE
     SWAP
-    POP
+    LODL 0  
     PRINTACCHAR
 
     LOCO STRING
     SUBD ONE SUBD ONE SUBD ONE SUBD ONE
     SWAP
-    POP
+    LODL 0  
     PRINTACCHAR
     
     LODD NEWLINE

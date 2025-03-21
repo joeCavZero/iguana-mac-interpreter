@@ -14,14 +14,14 @@ MAIN:
 LOOP:
     LODD AUX        # ac = *AUX
     SWAP            # sp = ac ; ac = sp
-    POP             # ac = numbers[i]
+    LODL 0          # ac = numbers[i]
 
     SUBD REACH      # ac = ac - *REACH
     JZER END        # if ac == 0 goto END
 
     LODD AUX        # ac = *AUX
     SWAP            # sp = ac ; ac = sp
-    POP             # ac = numbers[i]
+    LODL 0          # ac = numbers[i]
 
     PRINTAC         # print ac as a number
     LODD COMMA      # ac = *COMMA

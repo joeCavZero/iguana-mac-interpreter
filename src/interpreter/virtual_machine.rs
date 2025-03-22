@@ -305,7 +305,7 @@ impl VirtualMachine {
                                                                 }
                                                             },
                                                             None => {
-                                                                logkit::exit_with_error_message("Stack overflow: no space left to insert .word or .byte");
+                                                                logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .word or .byte", next_raw_token.line, next_raw_token.col);
                                                                 0
                                                             }
                                                         };
@@ -376,7 +376,7 @@ impl VirtualMachine {
                                                                                 }
                                                                             },
                                                                             None => {
-                                                                                logkit::exit_with_error_message("Stack overflow: no space left to insert string literal");
+                                                                                logkit::exit_with_positional_error_message("Stack overflow: no space left to insert string literal", next_next_raw_token.line, next_next_raw_token.col);
                                                                                 0
                                                                             }
                                                                         };
@@ -525,7 +525,7 @@ impl VirtualMachine {
                                                                     }
                                                                 },
                                                                 None => {
-                                                                    logkit::exit_with_error_message("Stack overflow: no space left to insert .space");
+                                                                    logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .space", next_next_raw_token.line, next_next_raw_token.col );
                                                                     0
                                                                 }
                                                             };
@@ -537,13 +537,13 @@ impl VirtualMachine {
 
                                                             for _ in 0..(value/2) {
                                                                 if self.sp <= 0 {
-                                                                    logkit::exit_with_error_message("Stack overflow: no space left to insert .space");
+                                                                    logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .space", next_next_raw_token.line, next_next_raw_token.col);
                                                                 }
                                                                 
                                                                 self.sp = match self.sp.checked_sub(1) {
                                                                     Some(v) => v,
                                                                     None => {
-                                                                        logkit::exit_with_error_message("Stack overflow: no space left to insert .space");
+                                                                        logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .space", next_next_raw_token.line, next_next_raw_token.col);
                                                                         0
                                                                     }
                                                                 };

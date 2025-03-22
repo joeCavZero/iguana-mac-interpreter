@@ -551,9 +551,18 @@ impl VirtualMachine {
                                      *      
                                      */
                                     if actual_raw_token.is_label() {
-                                        if last_line_initialized >= actual_raw_token.line {
-                                            logkit::exit_with_positional_error_message("You cannot initialize labels after instructions in the same line", actual_raw_token.line, actual_raw_token.col);
+
+                                        match get_next_closest_instruction_line_by_token_counter( &raw_tokens_vector, token_counter ) {
+                                            Some(next_closest_instruction_line) => {
+                                                if last_line_initialized >= next_closest_instruction_line {
+                                                    logkit::exit_with_positional_error_message("You cannot initialize labels this way. Do not put instructions after multiple labels declarations at the same line", actual_raw_token.line, actual_raw_token.col); 
+                                                }
+                                            },
+                                            None => {
+                                                logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
+                                            }
                                         }
+
                                         let label: String = actual_raw_token.get_token()[..actual_raw_token.get_token().len()-1].to_string();
                                         
                                         let next_closest_instruction_line_option: Option<u32> = get_next_closest_instruction_line_by_token_counter(&raw_tokens_vector, token_counter + 1);
@@ -569,7 +578,14 @@ impl VirtualMachine {
                                             }
                                         }
                                     } else {
-                                        last_line_initialized = actual_raw_token.line;
+                                        match get_next_closest_instruction_line_by_token_counter( &raw_tokens_vector, token_counter ) {
+                                            Some(next_closest_instruction_line) => {
+                                                last_line_initialized = next_closest_instruction_line;
+                                            },
+                                            None => {
+                                                logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
+                                            }
+                                        }
                                         let next_opcode = Opcode::from_str(actual_raw_token.get_token().as_str());
                                         if next_opcode != Opcode::None {
                                             if Opcode::is_argumented(next_opcode) {
@@ -730,15 +746,6 @@ impl VirtualMachine {
             }
         }
         
-        // Adiciona um HALT no final do programa
-        self.memory.push(
-            Instruction {
-                opcode: Opcode::Halt,
-                arg: 0,
-                line: u32::MAX,
-                col: u32::MAX,
-            }
-        );
     }
 
     fn execute(&mut self) {
@@ -816,6 +823,8 @@ impl VirtualMachine {
                             if instruction.arg < 0 {
                                 logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
                             }
+
+                            /*
                             let next_instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
 
                             if self.ac >= 0 {
@@ -823,28 +832,52 @@ impl VirtualMachine {
                             } else {
                                 self.pc += 1;
                             }
+                            */
+                            match self.get_closest_instruction_index_by_line( instruction.arg as u32) {
+                                Some(next_instruction_index) => {
+                                    if self.ac >= 0 {
+                                        self.pc = next_instruction_index;
+                                    } else {
+                                        self.pc += 1;
+                                    }
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
+                            }
                         },
                         Opcode::Jzer => {
                             if instruction.arg < 0 {
                                 logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
                             }
 
-                            let next_instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
-                            
-                            if self.ac == 0 {
-                                self.pc = next_instruction_index;
-                            } else {
-                                self.pc += 1;
+                            match self.get_closest_instruction_index_by_line(instruction.arg as u32) {
+                                Some(next_instruction_index) => {
+                                    if self.ac == 0 {
+                                        self.pc = next_instruction_index;
+                                    } else {
+                                        self.pc += 1;
+                                    }
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
                             }
+                            
                         },
                         Opcode::Jump => {
                             if instruction.arg < 0 {
                                 logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
                             }
-                            let next_instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
-
-
-                            self.pc = next_instruction_index;
+                            
+                            match self.get_closest_instruction_index_by_line(instruction.arg as u32) {
+                                Some(next_instruction_index) => {
+                                    self.pc = next_instruction_index;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
+                            }
                         },
                         Opcode::Loco => {
                             self.ac = instruction.arg;
@@ -913,12 +946,17 @@ impl VirtualMachine {
                                 logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
                             }
 
-                            let next_instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
-
-                            if self.ac < 0 {
-                                self.pc = next_instruction_index;
-                            } else {
-                                self.pc += 1;
+                            match self.get_closest_instruction_index_by_line(instruction.arg as u32) {
+                                Some(next_instruction_index) => {
+                                    if self.ac < 0 {
+                                        self.pc = next_instruction_index;
+                                    } else {
+                                        self.pc += 1;
+                                    }
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
                             }
                         },
                         Opcode::Jnze => {
@@ -926,12 +964,17 @@ impl VirtualMachine {
                                 logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
                             }
 
-                            let next_instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
-
-                            if self.ac != 0 {
-                                self.pc = next_instruction_index;
-                            } else {
-                                self.pc += 1;
+                            match self.get_closest_instruction_index_by_line(instruction.arg as u32) {
+                                Some(next_instruction_index) => {
+                                    if self.ac != 0 {
+                                        self.pc = next_instruction_index;
+                                    } else {
+                                        self.pc += 1;
+                                    }
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", instruction.arg).as_str(), instruction.line, instruction.col);
+                                }
                             }
                         },
                         Opcode::Call => {
@@ -939,24 +982,31 @@ impl VirtualMachine {
                                 logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
                             }
 
-                            let next_instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
+                            match self.get_closest_instruction_index_by_line(instruction.arg as u32) {
+                                Some(next_instruction_index) => {
+                                    match self.sp.checked_sub(1) {
+                                        Some(aux) => {
+                                            self.sp = aux;
+                                        },
+                                        None => {
+                                            logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
+                                        }
+                                    }
 
-                            match self.sp.checked_sub(1) {
-                                Some(aux) => {
-                                    self.sp = aux;
+                                    match self.set_stack_value(self.sp as i64, instruction.line as i16 + 1) {
+                                        Ok(_) => {},
+                                        Err(_) => {
+                                            logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                        }
+                                    }
+                                    self.pc = next_instruction_index;
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", instruction.arg).as_str(), instruction.line, instruction.col);
                                 }
                             }
 
-                            match self.set_stack_value(self.sp as i64, instruction.line as i16 + 1) {
-                                Ok(_) => {},
-                                Err(_) => {
-                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
-                                }
-                            }
-                            self.pc = next_instruction_index;
+
                         },
                         Opcode::Pshi => {
                             match self.sp.checked_sub(1) {
@@ -1043,13 +1093,15 @@ impl VirtualMachine {
                                 }
                             };
 
-                            
-
-                            let next_instruction_index = self.get_closest_instruction_index_by_line(sp_value as u32);
-
-                            self.pc = next_instruction_index;
-
-                            self.sp += 1; // decrementa o sp
+                            match self.get_closest_instruction_index_by_line(sp_value as u32) {
+                                Some(next_instruction_index) => {
+                                    self.pc = next_instruction_index;
+                                    self.sp += 1; // decrementa o sp
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", sp_value).as_str(), instruction.line, instruction.col);
+                                }
+                            }
                             
                         },
                         Opcode::Swap => {
@@ -1344,7 +1396,7 @@ impl VirtualMachine {
                                 logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
                             }
 
-                            match self.get_instruction_index_on_on_line_excepts_the_final_halt(instruction.arg as u32) {
+                            match self.get_closest_instruction_index_by_line(instruction.arg as u32) {
                                 Some(instruction_index) => {
                                     let instruction = self.memory.get(instruction_index as usize).unwrap();
                                     print!("{}", instruction.to_hash());
@@ -1363,7 +1415,7 @@ impl VirtualMachine {
                                 logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
                             }
 
-                            match self.get_instruction_index_on_on_line_excepts_the_final_halt(instruction.arg as u32) {
+                            match self.get_closest_instruction_index_by_line(instruction.arg as u32) {
                                 Some(instruction_index) => {
                                     let instruction = self.memory.get(instruction_index as usize).unwrap();
                                     println!("{}", instruction.to_hash());
@@ -1595,20 +1647,8 @@ impl VirtualMachine {
         }
     }
 
+    /*
     fn get_closest_instruction_index_by_line(&self, line: u32) -> u32 {
-        /*
-         * e.g.:
-         * 1- .text
-         * 2- LODD X (0 index in memory)
-         * 3-
-         * 4- ADDD X (1 index in memory)
-         * 
-         * get_closest_instruction_index_by_line(1) -> 0 (index)
-         * get_closest_instruction_index_by_line(2) -> 0
-         * get_closest_instruction_index_by_line(3) -> 1
-         * get_closest_instruction_index_by_line(4) -> 1
-         * get_closest_instruction_index_by_line(5) -> last HALT index (self.memory.len() - 1)
-         */
         
         let mut closest_index: u32 = 0;
         for (index, instruction) in self.memory.iter().enumerate() {
@@ -1620,25 +1660,19 @@ impl VirtualMachine {
 
         closest_index
     }
+    */
 
-    fn get_instruction_index_on_on_line_excepts_the_final_halt(&self, line: u32) -> Option<u32> {
+    fn get_closest_instruction_index_by_line(&self, line: u32) -> Option<u32> {
         let mut closest_option = None;
         for (index, instruction) in self.memory.iter().enumerate() {
-            /*
-             * This is because i do not want to etect the last final HALT 
-             * instruction as the closest instruction to the line
-             */
-            if index >= self.memory.len() - 1 {
-                return None;
-            } else if instruction.line >= line {
+            if instruction.line >= line {
                 closest_option = Some(index as u32);
                 break;
             }
-
-            
         }
         closest_option
     }
+
 }
 
 fn get_nth_token(raw_tokens: &Vec<Token>, n: usize) -> Option<Token> {

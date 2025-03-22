@@ -17,7 +17,7 @@ pub struct VirtualMachine {
     ac: i16, // Accumulator
     pc: u32, // Program Counter
     
-    sp: u32, // Stack Pointer
+    sp: i16, // Stack Pointer
     stack: [i16; STACK_SIZE ], // Stack
 
     memory: Vec<Instruction>, // Memory, used to store the instructions
@@ -32,7 +32,7 @@ impl VirtualMachine {
             file_path: file_path.to_string(),
             ac: 0,
             pc: 0,
-            sp: STACK_SIZE as u32 - 1,
+            sp: (STACK_SIZE - 1) as i16,
             memory: Vec::new(),
             stack: [0; STACK_SIZE],
             symbol_table: HashMap::new(),
@@ -292,7 +292,18 @@ impl VirtualMachine {
                                                     } else {
 
                                                         let mut aux_sp_address = match self.sp.checked_sub(1) {
-                                                            Some(v) => v,
+                                                            Some(v) => {
+                                                                if v < 0 {
+                                                                    if  next_raw_token.get_token() == ".word" {
+                                                                        logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .word", actual_raw_token.line, actual_raw_token.col);
+                                                                    } else if next_raw_token.get_token() == ".byte" {
+                                                                        logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .byte", actual_raw_token.line, actual_raw_token.col);
+                                                                    }
+                                                                    0
+                                                                } else {
+                                                                    v
+                                                                }
+                                                            },
                                                             None => {
                                                                 logkit::exit_with_error_message("Stack overflow: no space left to insert .word or .byte");
                                                                 0
@@ -307,7 +318,7 @@ impl VirtualMachine {
 
                                                         self.symbol_table.insert(
                                                             label,
-                                                            aux_sp_address,
+                                                            aux_sp_address as u32,
                                                         );
 
                                                         for v in &values {
@@ -356,7 +367,14 @@ impl VirtualMachine {
                                                                 match next_next_raw_token.to_string_literal() {
                                                                     Some(string_literal) => {
                                                                         let mut aux_sp_address = match self.sp.checked_sub(1) {
-                                                                            Some(v) => v,
+                                                                            Some(v) => {
+                                                                                if v < 0 {
+                                                                                    logkit::exit_with_positional_error_message("Stack overflow: no space left to insert string literal", next_next_raw_token.line, next_next_raw_token.col);
+                                                                                    0
+                                                                                } else {
+                                                                                    v
+                                                                                }
+                                                                            },
                                                                             None => {
                                                                                 logkit::exit_with_error_message("Stack overflow: no space left to insert string literal");
                                                                                 0
@@ -371,7 +389,7 @@ impl VirtualMachine {
 
                                                                         self.symbol_table.insert(
                                                                             label,
-                                                                            aux_sp_address,
+                                                                            aux_sp_address as u32,
                                                                         );
                                                                         
                                                                         
@@ -498,7 +516,14 @@ impl VirtualMachine {
                                                             }
                                                             
                                                             let aux_sp_address = match self.sp.checked_sub(1) {
-                                                                Some(v) => v,
+                                                                Some(v) => {
+                                                                    if v < 0 {
+                                                                        logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .space", next_next_raw_token.line, next_next_raw_token.col);
+                                                                        0
+                                                                    } else {
+                                                                        v
+                                                                    }
+                                                                },
                                                                 None => {
                                                                     logkit::exit_with_error_message("Stack overflow: no space left to insert .space");
                                                                     0
@@ -507,7 +532,7 @@ impl VirtualMachine {
 
                                                             self.symbol_table.insert(
                                                                 label,
-                                                                aux_sp_address,
+                                                                aux_sp_address as u32,
                                                             );
 
                                                             for _ in 0..(value/2) {
@@ -1047,7 +1072,14 @@ impl VirtualMachine {
                                     logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.ac).as_str(), instruction.line, instruction.col);
                                 }
                             }
-                            self.sp += 1; // decrementa o sp
+                            match self.sp.checked_add(1) { // decrementa o sp
+                                Some(aux) => {
+                                    self.sp = aux;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
+                                }
+                            }
                             self.pc += 1;
                         },
                         Opcode::Push => {
@@ -1075,7 +1107,14 @@ impl VirtualMachine {
                                     0
                                 }
                             };
-                            self.sp += 1; // decrementa o sp
+                            match self.sp.checked_add(1) { // decrementa o sp
+                                Some(aux) => {
+                                    self.sp = aux;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
+                                }
+                            }
                             self.pc += 1;
 
                         },
@@ -1096,7 +1135,15 @@ impl VirtualMachine {
                             match self.get_closest_instruction_index_by_line(sp_value as u32) {
                                 Some(next_instruction_index) => {
                                     self.pc = next_instruction_index;
-                                    self.sp += 1; // decrementa o sp
+                                    
+                                    match self.sp.checked_add(1) { // decrementa o sp
+                                        Some(aux) => {
+                                            self.sp = aux;
+                                        },
+                                        None => {
+                                            logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
+                                        }
+                                    }
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", sp_value).as_str(), instruction.line, instruction.col);
@@ -1109,18 +1156,18 @@ impl VirtualMachine {
                                 logkit::exit_with_positional_error_message("Expected a positive value in AC to swap with SP", instruction.line, instruction.col);
                             }
                             let tmp = self.ac;
-                            self.ac = self.sp as i16;
-                            self.sp = tmp as u32;
+                            self.ac = self.sp;
+                            self.sp = tmp;
                             self.pc += 1;
                             
                         },
                         Opcode::Insp => {
-                            match (self.sp as i64).checked_sub(instruction.arg as i64) {
+                            match (self.sp).checked_sub(instruction.arg) {
                                 Some(aux) => {
-                                    if aux < 0 || aux >= STACK_SIZE as i64 {
+                                    if aux < 0 {
                                         logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
                                     }
-                                    self.sp = aux as u32;
+                                    self.sp = aux;
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
@@ -1130,12 +1177,12 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Desp => {
-                            match (self.sp as i64).checked_add(instruction.arg as i64) {
+                            match (self.sp).checked_add(instruction.arg) {
                                 Some(aux) => {
-                                    if aux < 0 || aux >= STACK_SIZE as i64 {
+                                    if aux < 0 {
                                         logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
                                     }
-                                    self.sp = aux as u32;
+                                    self.sp = aux;
                                 },
                                 None => {
                                     logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
@@ -1619,7 +1666,7 @@ impl VirtualMachine {
                         }
                     }
                     
-                    if self.sp >= STACK_SIZE as u32 {
+                    if self.sp < 0 {
                         logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
                     }
                 },
@@ -1646,21 +1693,6 @@ impl VirtualMachine {
             }
         }
     }
-
-    /*
-    fn get_closest_instruction_index_by_line(&self, line: u32) -> u32 {
-        
-        let mut closest_index: u32 = 0;
-        for (index, instruction) in self.memory.iter().enumerate() {
-            if instruction.line >= line {
-                closest_index = index as u32;
-                break;
-            }
-        }
-
-        closest_index
-    }
-    */
 
     fn get_closest_instruction_index_by_line(&self, line: u32) -> Option<u32> {
         let mut closest_option = None;

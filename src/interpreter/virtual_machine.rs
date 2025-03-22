@@ -554,42 +554,18 @@ impl VirtualMachine {
                                         if last_line_initialized >= actual_raw_token.line {
                                             logkit::exit_with_positional_error_message("You cannot initialize labels after instructions in the same line", actual_raw_token.line, actual_raw_token.col);
                                         }
-                                        let label = actual_raw_token.get_token()[..actual_raw_token.get_token().len()-1].to_string();
-                                        let mut next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter + 1);
-                                        match next_raw_token_option.as_mut() {
-                                            Some(next_raw_token) => {
-                                                let next_opcode = Opcode::from_str(next_raw_token.get_token().as_str());
-                                                if next_opcode != Opcode::None {
-                                                    self.symbol_table.insert(
-                                                        label,
-                                                        actual_raw_token.line,
-                                                    );
-                                                    
-                                                    if Opcode::is_argumented(next_opcode) {
-                                                        token_counter += 2;
-                                                    } else {
-                                                        token_counter += 1;
-                                                    }
-                                                    /*  NOTA:
-                                                     *      Aqui não precisa incrementar o memory_label_counter, 
-                                                     *      pois labels não são contadas como instruções, então o contador 
-                                                     *      de instruções é incrementado apenas quando se tem uma instrução 
-                                                     *      válida
-                                                     */
-                                                    continue;
-                                                } else if next_raw_token.is_label() {
-                                                    self.symbol_table.insert(
-                                                        label,
-                                                        actual_raw_token.line,
-                                                    );
-                                                    token_counter += 1;
-                                                    continue;
-                                                } else {
-                                                    logkit::exit_with_positional_error_message("Expected an instruction after label", next_raw_token.line, next_raw_token.col);
-                                                }
+                                        let label: String = actual_raw_token.get_token()[..actual_raw_token.get_token().len()-1].to_string();
+                                        
+                                        let next_closest_instruction_line_option: Option<u32> = get_next_closest_instruction_line_by_token_counter(&raw_tokens_vector, token_counter + 1);
+                                        match next_closest_instruction_line_option {
+                                            Some(next_closest_instruction_line) => {
+                                                self.symbol_table.insert(
+                                                    label,
+                                                    next_closest_instruction_line,
+                                                );
                                             },
                                             None => {
-                                                logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col); 
+                                                logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
                                             }
                                         }
                                     } else {
@@ -1756,4 +1732,16 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize, is_dot_byte: b
     }
     
     values
+}
+
+fn get_next_closest_instruction_line_by_token_counter(raw_tokens: &Vec<Token>, offset: usize) -> Option<u32> {
+    let mut found_line: Option<u32> = None;
+    for i in offset..raw_tokens.len() {
+        let token = raw_tokens.get(i).unwrap();
+        if Opcode::from_str( token.get_token().as_str() ) != Opcode::None {
+            found_line = Some(token.line);
+            break;
+        }
+    }
+    found_line
 }

@@ -11,7 +11,7 @@ A simple 16-bit stack-based assembly interpreter for Andrew S. Tanenbaum's MAC a
 
 # Example Assembly Code
 
-The following example finds the largest of two values:
+The following example demonstrates a simple program that prints the string "Hello, World!" on the console:
 
 ```python
 # program to print a string
@@ -63,6 +63,7 @@ iguana info
 
 1. **Ensure that you have Rust and Cargo installed**:
    - Follow the installation guide on the official [Rust website](https://www.rust-lang.org/learn/get-started) if needed.
+   - If you're using Windows, you'll need to install the [Visual C++ Build Tools](https://visualstudio.microsoft.com/pt-br/visual-cpp-build-tools/) to compile the source code.
 
 2. **Clone the repository**:
    - Use the following command to clone the repository:

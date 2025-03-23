@@ -227,72 +227,59 @@ impl Token {
         self.token.len() >= 3 && self.token.chars().nth(0) == Some('0') && self.token.chars().nth(1) == Some('b')
     }
 
-    pub fn to_binary_literal_i16(&self) -> Option<i16> {// if binary_number >= i16::MAX then None 
-        let binary_string = self.token.clone();
-        let mut binary_number: i16 = 0;
-        let mut binary_counter = 2;
-        while binary_counter < binary_string.len() {
-            let binary_digit = match binary_string.chars().nth(binary_counter) {
-                Some('0') => 0,
-                Some('1') => 1,
-                _ => {
-                    logkit::exit_with_positional_error_message("Invalid binary literal", self.line, self.col);
-                    return None;
-                }
-            };
-            //its like: binary_number = binary_number * 2 + binary_digit;
-            match binary_number.checked_mul(2) {
-                Some(result) => {
-                    match result.checked_add(binary_digit) {
-                        Some(result) => binary_number = result,
-                        None => {
-                            logkit::exit_with_positional_error_message("Binary literal overflow, value must be between 0b0 and 0b111111111111111", self.line, self.col);
-                            return None;
-                        }
-                    }
-                }
-                None => {
-                    logkit::exit_with_positional_error_message("Binary literal overflow, value must be between 0b0 and 0b111111111111111", self.line, self.col);
-                    return None;
-                }
-            }
-            binary_counter += 1;
+    pub fn to_binary_literal_i16(&self) -> Option<i16> {
+        let binary_string = self.token.clone(); // ex: "0b1" ou "0b11" ou "0b0000000000000000"
+    
+        // Verifica se começa com "0b" e tem até 16 bits (+2 do "0b")
+        if !binary_string.starts_with("0b") || binary_string.len() < 3 || binary_string.len() > 18 {
+            return None;
         }
-        Some(binary_number)
+    
+        let bits = &binary_string[2..]; // Pega só os bits após "0b"
+        let mut result: i16 = 0;
+    
+        // Processa cada bit da esquerda para a direita
+        for c in bits.chars() {
+            match c {
+                '0' => {
+                    result = result.wrapping_shl(1);
+                }
+                '1' => {
+                    result = result.wrapping_shl(1) | 1;
+                }
+                _ => return None, // Caractere inválido
+            }
+        }
+    
+        Some(result)
     }
-
-    pub fn to_binary_literal_i32(&self) -> Option<i32> {// if binary_number >= i16::MAX then None 
-        let binary_string = self.token.clone();
-        let mut binary_number: i32 = 0;
-        let mut binary_counter = 2;
-        while binary_counter < binary_string.len() {
-            let binary_digit = match binary_string.chars().nth(binary_counter) {
-                Some('0') => 0,
-                Some('1') => 1,
-                _ => {
-                    logkit::exit_with_positional_error_message("Invalid binary literal", self.line, self.col);
-                    return None;
-                }
-            };
-            //its like: binary_number = binary_number * 2 + binary_digit;
-            match binary_number.checked_mul(2) {
-                Some(result) => {
-                    match result.checked_add(binary_digit) {
-                        Some(result) => binary_number = result,
-                        None => {
-                            logkit::exit_with_positional_error_message("Binary literal overflow, value must be between 0b0 and 0b1111111111111111111111111111111", self.line, self.col);
-                            return None;
-                        }
-                    }
-                }
-                None => {
-                    logkit::exit_with_positional_error_message("Binary literal overflow, value must be between 0b0 and 0b111111111111111", self.line, self.col);
-                    return None;
-                }
-            }
-            binary_counter += 1;
+    
+    
+    pub fn to_binary_literal_i32(&self) -> Option<i32> {
+        let binary_string = self.token.clone(); // ex: "0b1" ou "0b1111" ou "0b11111111111111111111111111111111"
+    
+        // Verifica se começa com "0b" e tem até 32 bits (+2 do "0b")
+        if !binary_string.starts_with("0b") || binary_string.len() < 3 || binary_string.len() > 34 {
+            return None;
         }
-        Some(binary_number)
+    
+        let bits = &binary_string[2..]; // Pega só os bits após "0b"
+        let mut result: i32 = 0;
+    
+        // Processa cada bit da esquerda para a direita
+        for c in bits.chars() {
+            match c {
+                '0' => {
+                    result = result.wrapping_shl(1);
+                }
+                '1' => {
+                    result = result.wrapping_shl(1) | 1;
+                }
+                _ => return None, // Caractere inválido
+            }
+        }
+    
+        Some(result)
     }
 
 }

@@ -202,11 +202,11 @@ iguana info
 
 - **CALL X**  
   **Behavior**: Calls a subroutine at line `X`, saving the return address on the stack.  
-  **Pseudo-behavior**: `sp = sp - 1; M[sp] = current_line + 1; pc = pc_of_instruction_on_line( X )`
+  **Pseudo-behavior**: `sp = sp - 1; M[sp] = pc + 1; pc = pc_of_instruction_on_line( X )`
 
 - **RETN**  
   **Behavior**: Returns from a subroutine by popping the return address from the stack.  
-  **Pseudo-behavior**: `pc = pc_of_instruction_on_line( M[sp] ); sp = sp + 1`
+  **Pseudo-behavior**: `pc = M[sp]; sp = sp + 1`
 
 ## Bitwise Operations
 

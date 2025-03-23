@@ -849,15 +849,6 @@ impl VirtualMachine {
                                 logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
                             }
 
-                            /*
-                            let next_instruction_index = self.get_closest_instruction_index_by_line(instruction.arg as u32);
-
-                            if self.ac >= 0 {
-                                self.pc = next_instruction_index;
-                            } else {
-                                self.pc += 1;
-                            }
-                            */
                             match self.get_closest_instruction_index_by_line( instruction.arg as u32) {
                                 Some(next_instruction_index) => {
                                     if self.ac >= 0 {
@@ -1018,7 +1009,22 @@ impl VirtualMachine {
                                         }
                                     }
 
-                                    match self.set_stack_value(self.sp as i64, instruction.line as i16 + 1) {
+                                    let next_pc_aux = match self.pc.checked_add(1) {
+                                        Some(aux) => {
+                                            if aux >= i16::MAX as u32 {
+                                                logkit::exit_with_positional_error_message("PC out of bounds for insertion in stack", instruction.line, instruction.col);
+                                                0
+                                            } else {
+                                                aux
+                                            }
+                                        },
+                                        None => {
+                                            logkit::exit_with_positional_error_message("PC out of bounds", instruction.line, instruction.col);
+                                            0
+                                        }
+                                    };
+
+                                    match self.set_stack_value(self.sp as i64, next_pc_aux as i16) {
                                         Ok(_) => {},
                                         Err(_) => {
                                             logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
@@ -1132,6 +1138,17 @@ impl VirtualMachine {
                                 }
                             };
 
+                            self.pc = sp_value as u32;
+                            match self.sp.checked_add(1) { // decrementa o sp
+                                Some(aux) => {
+                                    self.sp = aux;
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
+                                }
+                            }
+
+                            /*
                             match self.get_closest_instruction_index_by_line(sp_value as u32) {
                                 Some(next_instruction_index) => {
                                     self.pc = next_instruction_index;
@@ -1149,7 +1166,7 @@ impl VirtualMachine {
                                     logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", sp_value).as_str(), instruction.line, instruction.col);
                                 }
                             }
-                            
+                            */
                         },
                         Opcode::Swap => {
                             if self.ac < 0 {

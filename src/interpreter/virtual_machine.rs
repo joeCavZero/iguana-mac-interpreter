@@ -253,7 +253,7 @@ impl VirtualMachine {
                                         let label = actual_raw_token.get_token()[..actual_raw_token.get_token().len()-1].to_string();
                                         
                                         // Isso serve para impedir que uma label tenha o mesmo nome de uma instrução
-                                        if Opcode::from_str(label.as_str()) != Opcode::None {
+                                        if Opcode::from_str(label.as_str()).is_some() {
                                             logkit::exit_with_positional_error_message("Label name cannot be an instruction name", actual_raw_token.line, actual_raw_token.col);
                                         }
                                         
@@ -608,12 +608,12 @@ impl VirtualMachine {
                                                 last_line_initialized = next_closest_instruction_line;
                                             },
                                             None => {
-                                                logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
+                                                logkit::exit_with_positional_error_message("Expected an instruction or a label before an instruction", actual_raw_token.line, actual_raw_token.col);
                                             }
                                         }
                                         let next_opcode = Opcode::from_str(actual_raw_token.get_token().as_str());
-                                        if next_opcode != Opcode::None {
-                                            if Opcode::is_argumented(next_opcode) {
+                                        if next_opcode.is_some() {
+                                            if Opcode::is_argumented(next_opcode.unwrap()) {
                                                 token_counter += 2;
                                             } else {
                                                 token_counter += 1;
@@ -652,100 +652,101 @@ impl VirtualMachine {
                             match section {
                                 Section::Data => { token_counter += 1; },
                                 Section::Text => {
-                                    if Opcode::from_str(actual_raw_token.get_token().as_str()) != Opcode::None {
-                                        let opcode = Opcode::from_str(actual_raw_token.get_token().as_str());
-                                        if Opcode::is_argumented(opcode) {
-                                            
-                                            let next_raw_token_option = get_nth_token(&raw_tokens, token_counter + 1);
-                                            match next_raw_token_option {
-                                                        Some(next_raw_token) => {
-                                                            if self.symbol_table.contains_key(&next_raw_token.get_token()) {
-                                                                let label = next_raw_token.get_token();
-                                                                let label_address_option = self.symbol_table.get(&label);
-                                                                match label_address_option {
-                                                                    Some(label_address) => {
-                                                                        self.memory.push(
-                                                                            Instruction {
-                                                                                opcode: opcode,
-                                                                                arg: *label_address as i16,
-                                                                                line: actual_raw_token.line,
-                                                                                col: actual_raw_token.col,
+                                    if Opcode::from_str(actual_raw_token.get_token().as_str()).is_some() {
+                                        match Opcode::from_str(actual_raw_token.get_token().as_str()) {
+                                            Some(opcode) => {
+                                                if Opcode::is_argumented(opcode) {
+                                                    
+                                                    let next_raw_token_option = get_nth_token(&raw_tokens, token_counter + 1);
+                                                    match next_raw_token_option {
+                                                                Some(next_raw_token) => {
+                                                                    if self.symbol_table.contains_key(&next_raw_token.get_token()) {
+                                                                        let label = next_raw_token.get_token();
+                                                                        let label_address_option = self.symbol_table.get(&label);
+                                                                        match label_address_option {
+                                                                            Some(label_address) => {
+                                                                                self.memory.push(
+                                                                                    Instruction {
+                                                                                        opcode: opcode,
+                                                                                        arg: *label_address as i16,
+                                                                                        line: actual_raw_token.line,
+                                                                                        col: actual_raw_token.col,
+                                                                                    }
+                                                                                );
+
+                                                                                token_counter += 2;
+                                                                            },
+                                                                            None => {
+                                                                                logkit::exit_with_positional_error_message(format!("Label {} not found in symbol table", label).as_str(), next_raw_token.line, next_raw_token.col);
                                                                             }
-                                                                        );
+                                                                        }
+                                                                    } else {
+                                                                        if next_raw_token.is_hex_literal() {
+                                                                            let value_result = next_raw_token.to_hex_literal_i16();
+                                                                            match value_result {
+                                                                                Some(value) => {
+                                                                                    self.memory.push(
+                                                                                        Instruction {
+                                                                                            opcode: opcode,
+                                                                                            arg: value,
+                                                                                            line: actual_raw_token.line,
+                                                                                            col: actual_raw_token.col,
+                                                                                        }
+                                                                                    );
 
-                                                                        token_counter += 2;
-                                                                    },
-                                                                    None => {
-                                                                        logkit::exit_with_positional_error_message(format!("Label {} not found in symbol table", label).as_str(), next_raw_token.line, next_raw_token.col);
-                                                                    }
-                                                                }
-                                                            } else {
-                                                                if next_raw_token.is_hex_literal() {
-                                                                    let value_result = next_raw_token.to_hex_literal_i16();
-                                                                    match value_result {
-                                                                        Some(value) => {
-                                                                            self.memory.push(
-                                                                                Instruction {
-                                                                                    opcode: opcode,
-                                                                                    arg: value,
-                                                                                    line: actual_raw_token.line,
-                                                                                    col: actual_raw_token.col,
+                                                                                    token_counter += 2;
+                                                                                },
+                                                                                None => {
+                                                                                    logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", next_raw_token.line, next_raw_token.col);
                                                                                 }
-                                                                            );
-
-                                                                            token_counter += 2;
-                                                                        },
-                                                                        None => {
-                                                                            logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", next_raw_token.line, next_raw_token.col);
+                                                                            }
+                                                                        } else if next_raw_token.is_binary_literal() {
+                                                                            let value_result = next_raw_token.to_binary_literal_i16();
+                                                                            match value_result {
+                                                                                Some(value) => {
+                                                                                    self.memory.push(
+                                                                                        Instruction {
+                                                                                            opcode: opcode,
+                                                                                            arg: value,
+                                                                                            line: actual_raw_token.line,
+                                                                                            col: actual_raw_token.col,
+                                                                                        }
+                                                                                    );
+                                                                                    
+                                                                                    token_counter += 2;
+                                                                                },
+                                                                                None => {
+                                                                                    logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", next_raw_token.line, next_raw_token.col);
+                                                                                }
+                                                                            }
+                                                                        } else {
+                                                                            let value_result = next_raw_token.get_token().parse::<i16>();
+                                                                            match value_result {
+                                                                                Ok(value) => {
+                                                                                    self.memory.push(
+                                                                                        Instruction {
+                                                                                            opcode: opcode,
+                                                                                            arg: value,
+                                                                                            line: actual_raw_token.line,
+                                                                                            col: actual_raw_token.col,
+                                                                                        }
+                                                                                    );
+                                                                                    
+                                                                                    token_counter += 2;
+                                                                                },
+                                                                                Err(_) => {
+                                                                                    logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", next_raw_token.line, next_raw_token.col);
+                                                                                }
+                                                                            }
                                                                         }
                                                                     }
-                                                                } else if next_raw_token.is_binary_literal() {
-                                                                    let value_result = next_raw_token.to_binary_literal_i16();
-                                                                    match value_result {
-                                                                        Some(value) => {
-                                                                            self.memory.push(
-                                                                                Instruction {
-                                                                                    opcode: opcode,
-                                                                                    arg: value,
-                                                                                    line: actual_raw_token.line,
-                                                                                    col: actual_raw_token.col,
-                                                                                }
-                                                                            );
-                                                                            
-                                                                            token_counter += 2;
-                                                                        },
-                                                                        None => {
-                                                                            logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", next_raw_token.line, next_raw_token.col);
-                                                                        }
-                                                                    }
-                                                                } else {
-                                                                    let value_result = next_raw_token.get_token().parse::<i16>();
-                                                                    match value_result {
-                                                                        Ok(value) => {
-                                                                            self.memory.push(
-                                                                                Instruction {
-                                                                                    opcode: opcode,
-                                                                                    arg: value,
-                                                                                    line: actual_raw_token.line,
-                                                                                    col: actual_raw_token.col,
-                                                                                }
-                                                                            );
-                                                                            
-                                                                            token_counter += 2;
-                                                                        },
-                                                                        Err(_) => {
-                                                                            logkit::exit_with_positional_error_message("Expected a label or a valid value in range of (-32768...32767) after instruction", next_raw_token.line, next_raw_token.col);
-                                                                        }
-                                                                    }
+                                                                },
+                                                                None => {
+                                                                    logkit::exit_with_positional_error_message("Expected a label or a value after instruction", actual_raw_token.line, actual_raw_token.col);
                                                                 }
                                                             }
-                                                        },
-                                                        None => {
-                                                            logkit::exit_with_positional_error_message("Expected a label or a value after instruction", actual_raw_token.line, actual_raw_token.col);
-                                                        }
-                                                    }
-                                                
-                                        } else { // caso não seja uma instrução com argumentos
+                                                        
+                                                } else { // caso não seja uma instrução com argumentos
                                             self.memory.push(
                                                 Instruction {
                                                     opcode: opcode,
@@ -756,6 +757,11 @@ impl VirtualMachine {
                                             );
                                             
                                             token_counter += 1;
+                                        }
+                                            },
+                                            None => {
+                                                logkit::exit_with_positional_error_message("Expected an valid instruction", actual_raw_token.line, actual_raw_token.col);
+                                            }
                                         }
                                     } else if actual_raw_token.is_label() {
                                         token_counter += 1;
@@ -779,9 +785,6 @@ impl VirtualMachine {
             match instruction_option {
                 Some(instruction) => {
                     match instruction.opcode {
-                        Opcode::None => {
-                            self.pc += 1;
-                        },
                         Opcode::Lodd => {
                             match self.stack.get(instruction.arg as usize) {
                                 Some(value) => {
@@ -1821,7 +1824,7 @@ fn get_next_closest_instruction_line_by_token_counter(raw_tokens: &Vec<Token>, o
     let mut found_line: Option<u32> = None;
     for i in offset..raw_tokens.len() {
         let token = raw_tokens.get(i).unwrap();
-        if Opcode::from_str( token.get_token().as_str() ) != Opcode::None {
+        if Opcode::from_str( token.get_token().as_str() ).is_some() {
             found_line = Some(token.line);
             break;
         }

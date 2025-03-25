@@ -276,22 +276,6 @@ iguana info
   **Behavior**: Prints the value in the stack pointer (`sp`).  
   **Pseudo-behavior**: `print( sp )`
 
-- **PRINTLNTOPI X**  
-  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) with a line break.  
-  **Pseudo-behavior**: `print( M[ sp + X ] + '\n' )`
-
-- **PRINTLNTOPD X**  
-  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) with a line break.  
-  **Pseudo-behavior**: `print( M[ sp + M[X] ] + '\n' )`
-
-- **PRINTTOPI X**  
-  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`).  
-  **Pseudo-behavior**: `print( M[ sp + X ] )`
-
-- **PRINTTOPD X**  
-  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`).  
-  **Pseudo-behavior**: `print( M[ sp + M[X] ] )`
-
 - **PRINTLNACCHAR**  
   **Behavior**: Prints the value in the accumulator (`ac`) as a character with a line break.  
   **Pseudo-behavior**: `print( char( ac ) + '\n' )`
@@ -299,22 +283,6 @@ iguana info
 - **PRINTACCHAR**  
   **Behavior**: Prints the value in the accumulator (`ac`) as a character.  
   **Pseudo-behavior**: `print( char( ac ) )`
-
-- **PRINTLNTOPCHARI X**  
-  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character with a line break.  
-  **Pseudo-behavior**: `print( char( M[ sp + X ] ) + '\n' )`
-
-- **PRINTLNTOPCHARD X**  
-  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character with a line break.  
-  **Pseudo-behavior**: `print( char( M[ sp + M[X] ] ) + '\n' )`
-
-- **PRINTTOPCHARI X**  
-  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character.  
-  **Pseudo-behavior**: `print( char( M[ sp + X ] ) )`
-
-- **PRINTTOPCHARD X**  
-  **Behavior**: Prints the value at offset `X` from the stack pointer (`sp`) as a character.  
-  **Pseudo-behavior**: `print( char( M[ sp + M[X] ] ) )`
 
 - **PRINTLNINSTRUCTION X**  
   **Behavior**: Prints the instruction hash on line `X` with a line break.

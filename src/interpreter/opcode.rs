@@ -55,11 +55,8 @@ pub enum Opcode {
     Printlnac, Printac,
     Printlnacchar, Printacchar,
 
-    Printsp, Printlnsp,
-    Printlntopi, Printlntopd, Printtopi, Printtopd,
-    Printlntopchari, Printlntopchard, Printtopchari, Printtopchard,
-
-    Printinstruction, Printlninstruction,
+    Printlnsp, Printsp, 
+    Printlninstruction, Printinstruction, 
 
 }
 
@@ -109,16 +106,8 @@ impl Opcode {
             "PRINTLNACCHAR" => Some(Opcode::Printlnacchar),
             "PRINTACCHAR" => Some(Opcode::Printacchar),
 
-            "PRINTSP" => Some(Opcode::Printsp),
             "PRINTLNSP" => Some(Opcode::Printlnsp),
-            "PRINTLNTOPI" => Some(Opcode::Printlntopi),
-            "PRINTLNTOPD" => Some(Opcode::Printlntopd),
-            "PRINTTOPI" => Some(Opcode::Printtopi),
-            "PRINTTOPD" => Some(Opcode::Printtopd),
-            "PRINTLNTOPCHARI" => Some(Opcode::Printlntopchari),
-            "PRINTLNTOPCHARD" => Some(Opcode::Printlntopchard),
-            "PRINTTOPCHARI" => Some(Opcode::Printtopchari),
-            "PRINTTOPCHARD" => Some(Opcode::Printtopchard),
+            "PRINTSP" => Some(Opcode::Printsp),
 
             "PRINTINSTRUCTION" => Some(Opcode::Printinstruction),
             "PRINTLNINSTRUCTION" => Some(Opcode::Printlninstruction),

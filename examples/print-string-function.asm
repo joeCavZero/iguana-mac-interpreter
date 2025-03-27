@@ -3,8 +3,8 @@
 # the function uses the stack to store the return address (FUNCTION_RETURN_ADDRESS)
 
 .data
-    PRINT_STRING_POINTER: .word 0
-    FUNCTION_RETURN_ADDRESS: .word 0
+    PRINT_STRING_POINTER: .space 2
+    FUNCTION_RETURN_ADDRESS: .space 2
 
     STR1: .asciiz "Hi everyone!\n"
     STR2: .asciiz "My name is Joe!\n"

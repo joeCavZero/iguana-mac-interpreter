@@ -43,7 +43,7 @@ dependencies = [
 
 [[package]]
 name = "iguana"
-version = "1.5.6"
+version = "1.5.7"
 dependencies = [
  "colored",
  "rand",

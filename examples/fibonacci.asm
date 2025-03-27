@@ -3,7 +3,7 @@
     MAX: .word 32000
     A: .word 0
     B: .word 1
-    TEMP: .word 0
+    TEMP: .space 2
 
     COMMA: .ascii ","
 .text

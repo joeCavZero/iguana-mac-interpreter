@@ -62,7 +62,7 @@ impl VirtualMachine {
     fn print_stack(&self) {
         println!("======== Stack ========");
         for i in ((self.sp as usize) .. STACK_SIZE).rev() {
-            println!("Stack[{}]: {}", i, self.stack[i]);
+            println!("Stack[{}]: {} --- {}", i, self.stack[i], self.stack[i] as u8 as char);
         }
         println!("=======================");
     }
@@ -515,7 +515,7 @@ impl VirtualMachine {
                                                                 logkit::exit_with_positional_error_message("Expected an even (multiple of 2) value after .space, this ISA only supports 16 bits stack values", next_next_raw_token.line, next_next_raw_token.col);
                                                             }
                                                             
-                                                            let aux_sp_address = match self.sp.checked_sub(1) {
+                                                            let mut aux_sp_address = match self.sp.checked_sub(1) {
                                                                 Some(v) => {
                                                                     if v < 0 {
                                                                         logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .space", next_next_raw_token.line, next_next_raw_token.col);
@@ -530,6 +530,12 @@ impl VirtualMachine {
                                                                 }
                                                             };
 
+                                                            aux_sp_address = if is_data_memory_initialized {
+                                                                aux_sp_address
+                                                            } else {
+                                                                self.sp
+                                                            };
+                                                            
                                                             self.symbol_table.insert(
                                                                 label,
                                                                 aux_sp_address as u32,
@@ -540,13 +546,17 @@ impl VirtualMachine {
                                                                     logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .space", next_next_raw_token.line, next_next_raw_token.col);
                                                                 }
                                                                 
-                                                                self.sp = match self.sp.checked_sub(1) {
-                                                                    Some(v) => v,
-                                                                    None => {
-                                                                        logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .space", next_next_raw_token.line, next_next_raw_token.col);
-                                                                        0
-                                                                    }
-                                                                };
+                                                                if is_data_memory_initialized {
+                                                                    self.sp = match self.sp.checked_sub(1) {
+                                                                        Some(v) => v,
+                                                                        None => {
+                                                                            logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .space", next_next_raw_token.line, next_next_raw_token.col);
+                                                                            0
+                                                                        }
+                                                                    };
+                                                                } else {
+                                                                    is_data_memory_initialized = true;
+                                                                }
                                                             }
                                                             
                                                             token_counter += 3;

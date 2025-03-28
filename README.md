@@ -1,5 +1,5 @@
 <div align="center">
-  <img src=".assets/logo.png" width="200" style="border-radius: 10%;" />
+  <img src="assets/logo.png" width="200" />
 </div>
 
 <h1 align="center">IGUANA MAC INTERPRETER</h1>
@@ -9,7 +9,7 @@ A simple 16-bit stack-based assembly interpreter for Andrew S. Tanenbaum's MAC a
 
 ---
 
-# Example Assembly Code
+# Example Program
 
 The following example demonstrates a simple program that prints the string "Hello, World!" on the console:
 
@@ -17,21 +17,15 @@ The following example demonstrates a simple program that prints the string "Hell
 # program to print a string
 .data
 STRING: .asciiz "Hello, World!" # alocates a string in memory
-CHAR_POINTER: .space 2          # alocates 2 bytes in memory for a "pointer"
 ONE: .word 1                    # alocates a word in memory for a auxiliar variable
 .text
-MAIN:
     LOCO STRING         # ac = STRING as a pointer
-    STOD CHAR_POINTER   # *CHAR_POINTER = STRING
+    SWAP                # ac <-> sp
 LOOP:
-    LODD CHAR_POINTER   # ac = *CHAR_POINTER
-    SWAP                # sp = ac ; ac = sp
-    POP                 # ac = *sp ; sp = sp + 1 (decrement sp)
+    LODL 0              # ac = *sp
     JZER END            # if ac == 0 goto END
     PRINTACCHAR         # print ac as a char
-    LODD CHAR_POINTER        # ac = *CHAR_POINTER
-    SUBD ONE            # ac = ac - 1
-    STOD CHAR_POINTER   # *CHAR_POINTER = ac
+    INSP 1              # sp = sp - 1
     JUMP LOOP           # goto LOOP
 END:
     HALT                # finishes the program
@@ -61,36 +55,91 @@ iguana info
 
 # Build Instructions
 
-1. **Ensure that you have Rust and Cargo installed**:
-   - Follow the installation guide on the official [Rust website](https://www.rust-lang.org/learn/get-started) if needed.
-   - If you're using Windows, you'll need to install the [Visual C++ Build Tools](https://visualstudio.microsoft.com/pt-br/visual-cpp-build-tools/) to compile the source code.
+1. **If you're using Windows, ensure that you have the Visual C++ Build Tools installed**:
+    - You'll need to install the [Visual C++ Build Tools](https://visualstudio.microsoft.com/pt-br/visual-cpp-build-tools/).
+    - Select the "Desktop development with C++" workload during installation.
+    - This is a rust requirement for building the project on Windows.
+    - If you're using Linux or MacOS, you can skip this step.
+2. **Ensure that you have Rust and Cargo installed**:
+    - Follow the installation guide on the official [Rust website](https://www.rust-lang.org/learn/get-started) if needed.
+   
 
-2. **Clone the repository**:
-   - Use the following command to clone the repository:
-     ```bash
-     git clone https://github.com/joeCavZero/iguana-mac-interpreter.git
-     ```
-
-3. **Build the source code**:
+3. **Clone the repository**:
+    - Use the following command to clone the repository:
+      ```bash
+      git clone https://github.com/joeCavZero/iguana-mac-interpreter.git
+      ```
+    - Alternatively, you can download the repository as a ZIP file and extract it.
+  
+4. **Build the source code**:
    - Run the following command to build the project in release mode:
      ```bash
      cargo build --release
      ```
 
-4. **Locate the generated binary**:
+5. **Locate the generated binary**:
    - After the build is complete, the binary will be located at:
      ```bash
      ./target/release/iguana.exe on Windows 
      ( or iguana.app on MacOS or iguana on Linux )
      ```
 
-5. **Copy the binary to a convenient location**:
+6. **Copy the binary to a convenient location**:
    - Copy the binary to a location where you can easily access it, such as a directory in your system's PATH.
    - You can also save the binary in the environment variable PATH, allowing you to run the program from any directory.
 
 ---
 
+# **16-bit Architecture**
+- The interpreter operates on a **16-bit architecture**, meaning:
+  - The accumulator (`ac`) and all memory values are 16-bit signed integers (`i16`).
+  - The valid range for values is **-32,768 to 32,767**.
+  - Arithmetic operations that exceed this range will cause an **overflow error**.
+
+# **Symbol Table**
+- The interpreter uses a symbol table to store the memory addresses and line of label declarations.
+<div align="center">
+<img src="assets/symbol-table.png" width="500" />
+</div>
+
+# **Stack Size**
+- The interpreter uses a fixed-size stack with a capacity of **32,768 items**. This means that the stack can hold up 32,768 `i16` values at any given time.
+- Exceeding this limit will result in a **stack overflow** or **stack pointer out-of-bounds error**.
+
+# **Stack Growth Direction**
+- The stack pointer (`sp`) and the stack grow **downward** in memory. This means that as values are pushed onto the stack, the stack pointer decreases, and as values are popped, the stack pointer increases.
+<div align="center">
+<img src="assets/data-memory.png" width="500" />
+</div>
+
+# **Instruction Memory**
+- The interpreter uses a linked list to store the instructions of the program.
+- Each instruction is stored in a node with the following fields:
+  - `operation`: The operation code of the instruction.
+  - `argument`: The argument of the operation.
+
+<div align="center">
+<img src="assets/hash.png" width="500" />
+</div>
+
+- Each instruction can be viewed as a hash with the instructions PRINTLNINSTRUCTION and PRINTINSTRUCTION. 
+
+<div align="center">
+<img src="assets/hash-example.png" width="500" />
+</div>
+
+---
+
 # Iguana's MAC Operations Guide
+  - There are some new operations that were added to the original MAC assembly language to make the interpreter more debugable and user-friendly.
+  - The operations can be divided into the following categories:
+    - **Constant Loading**
+    - **Memory Operations**
+    - **Arithmetic Operations**
+    - **Control Flow Operations**
+    - **Bitwise Operations**
+    - **Debug Operations**
+    - **Custom Operations**
 
 ## Constant Loading
 
@@ -307,20 +356,3 @@ iguana info
 - **SLEEPI X**  
   **Behavior**: Pauses execution for `X` milliseconds.  
   **Pseudo-behavior**: `sleep_in_milliseconds( X )`
-
-## Important Notes
-
-Here are some key details about the Iguana MAC Interpreter that you should know:
-
-### **Stack Size**
-- The interpreter uses a fixed-size stack with a capacity of **32,768 items**. This means that the stack can hold up 32,768 `i16` values at any given time.
-- Exceeding this limit will result in a **stack overflow** or **stack pointer out-of-bounds error**.
-
-### **Stack Growth Direction**
-- The stack pointer (`sp`) and the stack grow **downward** in memory. This means that as values are pushed onto the stack, the stack pointer decreases, and as values are popped, the stack pointer increases.
-
-### **16-bit Architecture**
-- The interpreter operates on a **16-bit architecture**, meaning:
-  - The accumulator (`ac`) and all memory values are 16-bit signed integers (`i16`).
-  - The valid range for values is **-32,768 to 32,767**.
-  - Arithmetic operations that exceed this range will cause an **overflow error**.

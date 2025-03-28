@@ -58,6 +58,7 @@ iguana info
 1. **If you're using Windows, ensure that you have the Visual C++ Build Tools installed**:
     - You'll need to install the [Visual C++ Build Tools](https://visualstudio.microsoft.com/pt-br/visual-cpp-build-tools/).
     - Select the "Desktop development with C++" workload during installation.
+    - Press the "Install" button to install the required components.
     - This is a rust requirement for building the project on Windows.
     - If you're using Linux or MacOS, you can skip this step.
 2. **Ensure that you have Rust and Cargo installed**:

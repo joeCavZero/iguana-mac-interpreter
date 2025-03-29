@@ -108,7 +108,7 @@ iguana info
 - Exceeding this limit will result in a **stack overflow** or **stack pointer out-of-bounds error**.
 
 # **Stack Growth Direction**
-- The stack pointer (`sp`) and the stack grow **downward** in memory. This means that as values are pushed onto the stack, the stack pointer decreases, and as values are popped, the stack pointer increases.
+- The stack pointer (`sp`) and the stack grow **downward** in memory. This means that when values are pushed onto the stack, the stack pointer decreases, and when values are popped, the stack pointer increases.
 <div align="center">
 <img src="assets/data-memory.png" width="500" />
 </div>
@@ -123,7 +123,7 @@ iguana info
 <img src="assets/hash.png" width="500" />
 </div>
 
-- Each instruction can be viewed as a hash with the instructions PRINTLNINSTRUCTION and PRINTINSTRUCTION. 
+- Each instruction can be viewed as its format with the instructions `PRINTLNINSTRUCTION` and `PRINTINSTRUCTION`. 
 
 <div align="center">
 <img src="assets/hash-example.png" width="500" />
@@ -335,12 +335,12 @@ iguana info
   **Pseudo-behavior**: `print( char( ac ) )`
 
 - **PRINTLNINSTRUCTION X**  
-  **Behavior**: Prints the instruction hash on line `X` with a line break.
-  **Pseudo-behavior**: `print( hash( pc_of_instruction_on_line( X ) ) + '\n' )`
+  **Behavior**: Prints the instruction format on line `X` with a line break.
+  **Pseudo-behavior**: `print( format( pc_of_instruction_on_line( X ) ) + '\n' )`
 
 - **PRINTINSTRUCTION X**  
-  **Behavior**: Prints the instruction hash on line `X`.
-  **Pseudo-behavior**: `print( hash( pc_of_instruction_on_line( X ) ) )`
+  **Behavior**: Prints the instruction format on line `X`.
+  **Pseudo-behavior**: `print( format( pc_of_instruction_on_line( X ) ) )`
 
 
 

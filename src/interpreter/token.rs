@@ -107,7 +107,11 @@ impl Token {
                             str_counter += 2;
                         }
                         _ => {
-                            logkit::exit_with_positional_error_message("Invalid escape sequence", self.line, self.col + str_counter as u32);
+                            logkit::exit_with_positional_error_message(
+                                format!("Invalid escape sequence '{}' in string literal.", string_to_process).as_str(),
+                                self.line,
+                                self.col + str_counter as u32,
+                            );
                         }
                     }
                 } else {
@@ -149,7 +153,11 @@ impl Token {
                 Some('e') => 14,
                 Some('f') => 15,
                 _ => {
-                    logkit::exit_with_positional_error_message("Invalid hexadecimal literal", self.line, self.col);
+                    logkit::exit_with_positional_error_message(
+                        "Invalid hexadecimal literal. Ensure it starts with '0x' and contains valid digits.",
+                        self.line,
+                        self.col,
+                    );
                     return None;
                 }
             };
@@ -159,13 +167,21 @@ impl Token {
                     match result.checked_add(hex_digit) {
                         Some(result) => hex_number = result,
                         None => {
-                            logkit::exit_with_positional_error_message("Hexadecimal literal overflow, value must be between 0x0 and 0x7fff", self.line, self.col);
+                            logkit::exit_with_positional_error_message(
+                                "Hexadecimal literal overflow. Value must be between 0x0 and 0x7fff.",
+                                self.line,
+                                self.col,
+                            );
                             return None;
                         }
                     }
                 }
                 None => {
-                    logkit::exit_with_positional_error_message("Hexadecimal literal overflow, value must be between 0x0 and 0x7fff", self.line, self.col);
+                    logkit::exit_with_positional_error_message(
+                        "Hexadecimal literal overflow. Value must be between 0x0 and 0x7fff.",
+                        self.line,
+                        self.col,
+                    );
                     return None;
                 }
             }
@@ -198,7 +214,11 @@ impl Token {
                 Some('e') => 14,
                 Some('f') => 15,
                 _ => {
-                    logkit::exit_with_positional_error_message("Invalid hexadecimal literal", self.line, self.col);
+                    logkit::exit_with_positional_error_message(
+                        "Invalid hexadecimal literal. Ensure it starts with '0x' and contains valid digits.",
+                        self.line,
+                        self.col,
+                    );
                     return None;
                 }
             };
@@ -208,13 +228,21 @@ impl Token {
                     match result.checked_add(hex_digit) {
                         Some(result) => hex_number = result,
                         None => {
-                            logkit::exit_with_positional_error_message("Hexadecimal literal overflow, value must be between 0x0 and 0x7fffffff", self.line, self.col);
+                            logkit::exit_with_positional_error_message(
+                                "Hexadecimal literal overflow. Value must be between 0x0 and 0x7fffffff.",
+                                self.line,
+                                self.col,
+                            );
                             return None;
                         }
                     }
                 }
                 None => {
-                    logkit::exit_with_positional_error_message("Hexadecimal literal overflow, value must be between 0x0 and 0x7fffffff", self.line, self.col);
+                    logkit::exit_with_positional_error_message(
+                        "Hexadecimal literal overflow. Value must be between 0x0 and 0x7fffffff.",
+                        self.line,
+                        self.col,
+                    );
                     return None;
                 }
             }
@@ -247,7 +275,11 @@ impl Token {
                 Some('e') => 14,
                 Some('f') => 15,
                 _ => {
-                    logkit::exit_with_positional_error_message("Invalid hexadecimal literal", self.line, self.col);
+                    logkit::exit_with_positional_error_message(
+                        "Invalid hexadecimal literal. Ensure it starts with '0x' and contains valid digits.",
+                        self.line,
+                        self.col,
+                    );
                     return None;
                 }
             };
@@ -259,9 +291,9 @@ impl Token {
                         Some(result) => hex_number = result,
                         None => {
                             logkit::exit_with_positional_error_message(
-                                "Hexadecimal literal overflow, value must be between 0x0 and 0xffffffff",
+                                "Hexadecimal literal overflow. Value must be between 0x0 and 0xffffffff.",
                                 self.line,
-                                self.col
+                                self.col,
                             );
                             return None;
                         }
@@ -269,9 +301,9 @@ impl Token {
                 }
                 None => {
                     logkit::exit_with_positional_error_message(
-                        "Hexadecimal literal overflow, value must be between 0x0 and 0xffffffff",
+                        "Hexadecimal literal overflow. Value must be between 0x0 and 0xffffffff.",
                         self.line,
-                        self.col
+                        self.col,
                     );
                     return None;
                 }
@@ -305,7 +337,14 @@ impl Token {
                 '1' => {
                     result = result.wrapping_shl(1) | 1;
                 }
-                _ => return None, // Caractere inválido
+                _ => {
+                    logkit::exit_with_positional_error_message(
+                        "Invalid binary literal. Ensure it starts with '0b' and contains only '0' or '1'.",
+                        self.line,
+                        self.col,
+                    );
+                    return None; // Caractere inválido
+                }
             }
         }
     
@@ -333,7 +372,14 @@ impl Token {
                 '1' => {
                     result = result.wrapping_shl(1) | 1;
                 }
-                _ => return None, // Caractere inválido
+                _ => {
+                    logkit::exit_with_positional_error_message(
+                        "Invalid binary literal. Ensure it starts with '0b' and contains only '0' or '1'.",
+                        self.line,
+                        self.col,
+                    );
+                    return None; // Caractere inválido
+                }
             }
         }
     
@@ -357,7 +403,14 @@ impl Token {
                 '0' => {
                     match result.checked_shl(1) {
                         Some(shifted) => result = shifted,
-                        None => return None, // Overflow
+                        None => {
+                            logkit::exit_with_positional_error_message(
+                                "Binary literal overflow. Value must fit within 16 bits.",
+                                self.line,
+                                self.col,
+                            );
+                            return None; // Overflow
+                        }
                     }
                 }
                 '1' => {
@@ -365,13 +418,34 @@ impl Token {
                         Some(shifted) => {
                             match shifted.checked_add(1) {
                                 Some(added) => result = added,
-                                None => return None, // Overflow
+                                None => {
+                                    logkit::exit_with_positional_error_message(
+                                        "Binary literal overflow. Value must fit within 16 bits.",
+                                        self.line,
+                                        self.col,
+                                    );
+                                    return None; // Overflow
+                                }
                             }
                         }
-                        None => return None, // Overflow
+                        None => {
+                            logkit::exit_with_positional_error_message(
+                                "Binary literal overflow. Value must fit within 16 bits.",
+                                self.line,
+                                self.col,
+                            );
+                            return None; // Overflow
+                        }
                     }
                 }
-                _ => return None, // Caractere inválido
+                _ => {
+                    logkit::exit_with_positional_error_message(
+                        "Invalid binary literal. Ensure it starts with '0b' and contains only '0' or '1'.",
+                        self.line,
+                        self.col,
+                    );
+                    return None; // Caractere inválido
+                }
             }
         }
     

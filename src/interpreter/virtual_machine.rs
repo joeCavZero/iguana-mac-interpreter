@@ -95,7 +95,7 @@ impl VirtualMachine {
         let raw_content = match std::fs::read_to_string(&self.file_path) {
             Ok(content) => content.replace("\r", ""),
             Err(_) => {
-                logkit::exit_with_error_message("Error reading file");
+                logkit::exit_with_error_message("Error reading file. Please check if the file exists and is accessible.");
                 String::new()
             },
         };
@@ -254,12 +254,20 @@ impl VirtualMachine {
                                         
                                         // Isso serve para impedir que uma label tenha o mesmo nome de uma instrução
                                         if Opcode::from_str(label.as_str()).is_some() {
-                                            logkit::exit_with_positional_error_message("Label name cannot be an instruction name", actual_raw_token.line, actual_raw_token.col);
+                                            logkit::exit_with_positional_error_message(
+                                                format!("Label '{}' cannot have the same name as an instruction.", label).as_str(),
+                                                actual_raw_token.line,
+                                                actual_raw_token.col,
+                                            );
                                         }
                                         
                                         let next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter+1);
                                         if next_raw_token_option.is_none() {
-                                            logkit::exit_with_positional_error_message("Expected .word, .byte, .space, .ascii or .asciiz after label", actual_raw_token.line, actual_raw_token.col);
+                                            logkit::exit_with_positional_error_message(
+                                                format!("Expected '.word', '.byte', '.space', '.ascii', or '.asciiz' after label '{}'.", label).as_str(),
+                                                actual_raw_token.line,
+                                                actual_raw_token.col,
+                                            );
                                         } else {
                                             
                                             let next_raw_token = next_raw_token_option.unwrap();
@@ -283,29 +291,32 @@ impl VirtualMachine {
                                                     }
 
                                                     if values.len() == 0 {
-                                                        if next_raw_token.get_token() == ".word" {
-                                                            logkit::exit_with_positional_error_message(format!("Expected at least one valid value after .word after label {}, found {} valid values", label, values.len()).as_str(), actual_raw_token.line, actual_raw_token.col);
-                                                        } else if next_raw_token.get_token() == ".byte" {
-                                                            logkit::exit_with_positional_error_message(format!("Expected at least one valid value after .byte after label {}, found {} valid values", label, values.len()).as_str(), actual_raw_token.line, actual_raw_token.col);
-                                                        }
-                                                        
+                                                        logkit::exit_with_positional_error_message(
+                                                            format!("Expected at least one valid value after '{}', but found none.", next_raw_token.get_token()).as_str(),
+                                                            actual_raw_token.line,
+                                                            actual_raw_token.col,
+                                                        );
                                                     } else {
 
                                                         let mut aux_sp_address = match self.sp.checked_sub(1) {
                                                             Some(v) => {
                                                                 if v < 0 {
-                                                                    if  next_raw_token.get_token() == ".word" {
-                                                                        logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .word", actual_raw_token.line, actual_raw_token.col);
-                                                                    } else if next_raw_token.get_token() == ".byte" {
-                                                                        logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .byte", actual_raw_token.line, actual_raw_token.col);
-                                                                    }
+                                                                    logkit::exit_with_positional_error_message(
+                                                                        "Stack overflow: insufficient space to insert values.",
+                                                                        actual_raw_token.line,
+                                                                        actual_raw_token.col,
+                                                                    );
                                                                     0
                                                                 } else {
                                                                     v
                                                                 }
                                                             },
                                                             None => {
-                                                                logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .word or .byte", next_raw_token.line, next_raw_token.col);
+                                                                logkit::exit_with_positional_error_message(
+                                                                    "Stack overflow: insufficient space to insert values.",
+                                                                    next_raw_token.line,
+                                                                    next_raw_token.col,
+                                                                );
                                                                 0
                                                             }
                                                         };
@@ -325,11 +336,11 @@ impl VirtualMachine {
                                                             let aux_sp_value = match self.sp.checked_sub(1) {
                                                                 Some(v) => v,
                                                                 None => {
-                                                                    if next_raw_token.get_token() == ".word" {
-                                                                        logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .word", actual_raw_token.line, actual_raw_token.col);
-                                                                    } else if next_raw_token.get_token() == ".byte" {
-                                                                        logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .byte", actual_raw_token.line, actual_raw_token.col);
-                                                                    }
+                                                                    logkit::exit_with_positional_error_message(
+                                                                        "Stack overflow: insufficient space to insert values.",
+                                                                        actual_raw_token.line,
+                                                                        actual_raw_token.col,
+                                                                    );
                                                                     0
                                                                 }
                                                             }; 
@@ -345,11 +356,11 @@ impl VirtualMachine {
                                                                     
                                                                 },
                                                                 None => {
-                                                                    if next_raw_token.get_token() == ".word" {
-                                                                        logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .word", actual_raw_token.line, actual_raw_token.col);
-                                                                    } else if next_raw_token.get_token() == ".byte" {
-                                                                        logkit::exit_with_positional_error_message("Stack overflow: no space left to insert .byte", actual_raw_token.line, actual_raw_token.col);
-                                                                    }
+                                                                    logkit::exit_with_positional_error_message(
+                                                                        "Stack overflow: insufficient space to insert values.",
+                                                                        actual_raw_token.line,
+                                                                        actual_raw_token.col,
+                                                                    );
                                                                 }
                                                             }
                                                         }
@@ -410,9 +421,6 @@ impl VirtualMachine {
                                                                          *  ou seja, o primeiro byte da string literal é o último a ser colocado na stack (a stack cresce de cima para baixo)
                                                                          */
 
-                                                                        /* Decidir usar isso é importante, pois a ordem dos bytes da string literal é importante !!!!!
-                                                                         *  string_literal_bytes.reverse(); 
-                                                                         */
 
                                                                          for b in string_literal_bytes {
                                                                             if self.sp <= 0 {
@@ -651,7 +659,11 @@ impl VirtualMachine {
                                                                                 *label_line_address
                                                                             },
                                                                             None => {
-                                                                                logkit::exit_with_positional_error_message(format!("Label {} not found in symbol table", label).as_str(), next_raw_token.line, next_raw_token.col);
+                                                                                logkit::exit_with_positional_error_message(
+                                                                                    format!("Label '{}' not found in the symbol table.", label).as_str(),
+                                                                                    next_raw_token.line,
+                                                                                    next_raw_token.col,
+                                                                                );
                                                                                 0
                                                                             }
                                                                         }
@@ -1187,25 +1199,6 @@ impl VirtualMachine {
                                 }
                             }
 
-                            /*
-                            match self.get_closest_instruction_index_by_line(sp_value as u32) {
-                                Some(next_instruction_index) => {
-                                    self.pc = next_instruction_index;
-                                    
-                                    match self.sp.checked_add(1) { // decrementa o sp
-                                        Some(aux) => {
-                                            self.sp = aux;
-                                        },
-                                        None => {
-                                            logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
-                                        }
-                                    }
-                                },
-                                None => {
-                                    logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", sp_value).as_str(), instruction.line, instruction.col);
-                                }
-                            }
-                            */
                         },
                         Opcode::Swap => {
                             if self.ac < 0 {
@@ -1305,7 +1298,11 @@ impl VirtualMachine {
                                     io::stdout().flush().unwrap();
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message(format!("Could not find instruction at line {}", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(
+                                        format!("Instruction at line {} not found or out of bounds.", instruction.arg).as_str(),
+                                        instruction.line,
+                                        instruction.col,
+                                    );
                                 }
                             }
 
@@ -1325,7 +1322,11 @@ impl VirtualMachine {
                                     io::stdout().flush().unwrap();
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message(format!("Could not find instruction at line {}", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    logkit::exit_with_positional_error_message(
+                                        format!("Instruction at line {} not found or out of bounds.", instruction.arg).as_str(),
+                                        instruction.line,
+                                        instruction.col,
+                                    );
                                 }
                             }
                             self.pc += 1;
@@ -1448,7 +1449,7 @@ impl VirtualMachine {
                             match self.stack.get(instruction.arg as usize) {
                                 Some(value) => {
                                     if *value == 0 {
-                                        logkit::exit_with_positional_error_message("Division by zero", instruction.line, instruction.col);
+                                        logkit::exit_with_positional_error_message("Division by zero is not allowed.", instruction.line, instruction.col);
                                     }
                                     self.ac = self.ac / *value;
                                 },
@@ -1579,75 +1580,6 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize, is_dot_byte: b
                         aux_value_counter += 1;
                     },
                     _ => {
-                        /*
-                        if aux_raw_token.is_char_literal() {
-                            let val = aux_raw_token.from_char_to_i16() as i16;
-                            if is_dot_byte {
-                                if val < 0 || val > 255 {
-                                    logkit::exit_with_positional_error_message("Value out of range (0...255)", aux_raw_token.line, aux_raw_token.col);
-                                }
-                            }
-                            values.push(val);
-                            aux_value_counter += 1;
-                        } else if aux_raw_token.is_hex_literal() {
-                            let value_option = aux_raw_token.from_hex_to_i16();
-                            match value_option {
-                                Some(value) => {
-                                    if is_dot_byte {
-                                        if value < 0 || value > 255 {
-                                            logkit::exit_with_positional_error_message("Value out of range (0...255)", aux_raw_token.line, aux_raw_token.col);
-                                        }
-                                    }
-                                    values.push(value);
-                                    aux_value_counter += 1;
-                                },
-                                None => {
-                                    break 'aux_value_counter_loop;
-                                }
-                            }
-                        } else if aux_raw_token.is_binary_literal() {
-                            let value_option = aux_raw_token.from_binary_to_i16();
-                            match value_option {
-                                Some(value) => {
-                                    if is_dot_byte {
-                                        if value < 0 || value > 255 {
-                                            logkit::exit_with_positional_error_message("Value out of range (0...255)", aux_raw_token.line, aux_raw_token.col);
-                                        }
-                                    }
-                                    values.push(value);
-                                    aux_value_counter += 1;
-                                },
-                                None => {
-                                    break 'aux_value_counter_loop;
-                                }
-                            }
-                        } else {
-                            let value = aux_raw_token.get_token().parse::<i16>();
-                            match value {
-                                Ok(v) => {
-                                    if is_dot_byte {
-                                        if v < 0 || v > 255 {
-                                            logkit::exit_with_positional_error_message("Value out of range (0...255)", aux_raw_token.line, aux_raw_token.col);
-                                        }
-                                    }
-                                    values.push(v);
-                                    aux_value_counter += 1;
-                                },
-                                Err(_) => {
-                                    if vector.get(aux_value_counter - 1).unwrap().get_token().as_str() == "," {
-                                        if is_dot_byte {
-                                            logkit::exit_with_positional_error_message("Expected a valid value in range of 0...255", aux_raw_token.line, aux_raw_token.col);
-                                        } else {
-                                            logkit::exit_with_positional_error_message("Expected a valid value in range of -32768...32767", aux_raw_token.line, aux_raw_token.col);
-                                        }
-                                    } else {
-                                        break 'aux_value_counter_loop;
-                                    }
-                                    break 'aux_value_counter_loop;
-                                }
-                            }
-                        }
-                        */
                         
                         match aux_raw_token.to_i16_value() {
                             Some(value) => {

@@ -474,40 +474,14 @@ impl VirtualMachine {
                                                     let next_next_raw_token_option = get_nth_token(&raw_tokens_vector, token_counter+2);
                                                     match next_next_raw_token_option {
                                                         Some(next_next_raw_token) => {
-                                                            let mut value: i32 = 0;
-                                                            if next_next_raw_token.is_hex_literal() {
-                                                                
-                                                                let hex_value_result = next_next_raw_token.to_hex_literal_i32();
-                                                                match hex_value_result {
-                                                                    Some(v) => {
-                                                                        value = v;
-                                                                    },
-                                                                    None => {
-                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space in range of (--2_147_483_648...2_147_483_647)", next_next_raw_token.line, next_next_raw_token.col);
-                                                                    }
+                                                            let value: i32 = match next_next_raw_token.to_i32_value() {
+                                                                Some(v) => v,
+                                                                None => {
+                                                                    logkit::exit_with_positional_error_message("Expected a valid value after .space", next_next_raw_token.line, next_next_raw_token.col);
+                                                                    0
                                                                 }
-                                                            } else if next_next_raw_token.is_binary_literal() {
-                                                                let binary_value_result = next_next_raw_token.to_binary_literal_i32();
-                                                                match binary_value_result {
-                                                                    Some(v) => {
-                                                                        value = v;
-                                                                    },
-                                                                    None => {
-                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space in range of (--2_147_483_648...2_147_483_647)", next_next_raw_token.line, next_next_raw_token.col);
-                                                                    }
-                                                                } 
-                                                            } else {
-                                                                let value_result = next_next_raw_token.get_token().parse::<i32>();
-                                                                match value_result {
-                                                                    Ok(v) => {
-                                                                        value = v;
-                                                                    },
-                                                                    Err(_) => {
-                                                                        logkit::exit_with_positional_error_message("Expected a valid value after .space in range of (--2_147_483_648...2_147_483_647)", next_next_raw_token.line, next_next_raw_token.col);
-                                                                    }
-                                                                }
-                                                            }
-                                                                        
+                                                            };
+                                                            
                                                             if value < 0 {
                                                                 logkit::exit_with_positional_error_message("Expected a positive value after .space", next_next_raw_token.line, next_next_raw_token.col);
                                                             }
@@ -666,9 +640,55 @@ impl VirtualMachine {
                                         match Opcode::from_str(actual_raw_token.get_token().as_str()) {
                                             Some(opcode) => {
                                                 if Opcode::is_argumented(opcode) {
-                                                    
-                                                    let next_raw_token_option = get_nth_token(&raw_tokens, token_counter + 1);
-                                                    match next_raw_token_option {
+                                                    match opcode {
+                                                        Opcode::Jpos | Opcode::Jzer | Opcode::Jump | Opcode::Jneg | Opcode::Jnze | Opcode::Call | Opcode::Printlninstruction | Opcode::Printinstruction => {
+                                                            match get_nth_token(&raw_tokens, token_counter + 1) {
+                                                                Some(next_raw_token) => {
+                                                                    let raw_argument: u32 = if self.symbol_table.contains_key(&next_raw_token.get_token()) {
+                                                                        let label = next_raw_token.get_token();
+                                                                        match self.symbol_table.get(&label) {
+                                                                            Some(label_line_address) => {
+                                                                                *label_line_address
+                                                                            },
+                                                                            None => {
+                                                                                logkit::exit_with_positional_error_message(format!("Label {} not found in symbol table", label).as_str(), next_raw_token.line, next_raw_token.col);
+                                                                                0
+                                                                            }
+                                                                        }
+                                                                        } else {
+                                                                            match next_raw_token.to_u32_value() {
+                                                                                Some(v) => v,
+                                                                                None => {
+                                                                                    logkit::exit_with_positional_error_message("Expected a label or a valid value in range of 32 bits after instruction", next_raw_token.line, next_raw_token.col);
+                                                                                    0
+                                                                                }
+                                                                            }
+                                                                        };
+
+                                                                    let offsetted_argument: i64 = raw_argument as i64 - actual_raw_token.line as i64;
+
+                                                                    if offsetted_argument < i16::MIN as i64 || offsetted_argument > i16::MAX as i64 {
+                                                                        logkit::exit_with_positional_error_message(format!("Processed control flow instruction with argument {} out of i16 bounds", offsetted_argument).as_str(), next_raw_token.line, next_raw_token.col);
+                                                                    }
+
+                                                                    self.memory.push(
+                                                                        Instruction {
+                                                                            opcode: opcode,
+                                                                            arg: offsetted_argument as i16,
+                                                                            line: actual_raw_token.line,
+                                                                            col: actual_raw_token.col,
+                                                                        }
+                                                                    );
+                                                                },
+                                                                None => {
+                                                                    logkit::exit_with_positional_error_message("Expected a label or a value after instruction", actual_raw_token.line, actual_raw_token.col);
+                                                                }
+                                                            }
+                                                            token_counter += 2;
+                                                        },
+                                                        _ => {
+                                                            let next_raw_token_option = get_nth_token(&raw_tokens, token_counter + 1);
+                                                            match next_raw_token_option {
                                                                 Some(next_raw_token) => {
                                                                     if self.symbol_table.contains_key(&next_raw_token.get_token()) {
                                                                         let label = next_raw_token.get_token();
@@ -692,7 +712,7 @@ impl VirtualMachine {
                                                                         }
                                                                     } else {
                                                                         if next_raw_token.is_hex_literal() {
-                                                                            let value_result = next_raw_token.to_hex_literal_i16();
+                                                                            let value_result = next_raw_token.from_hex_to_i16();
                                                                             match value_result {
                                                                                 Some(value) => {
                                                                                     self.memory.push(
@@ -711,7 +731,7 @@ impl VirtualMachine {
                                                                                 }
                                                                             }
                                                                         } else if next_raw_token.is_binary_literal() {
-                                                                            let value_result = next_raw_token.to_binary_literal_i16();
+                                                                            let value_result = next_raw_token.from_binary_to_i16();
                                                                             match value_result {
                                                                                 Some(value) => {
                                                                                     self.memory.push(
@@ -755,19 +775,20 @@ impl VirtualMachine {
                                                                     logkit::exit_with_positional_error_message("Expected a label or a value after instruction", actual_raw_token.line, actual_raw_token.col);
                                                                 }
                                                             }
-                                                        
+                                                        }
+                                                    }
                                                 } else { // caso não seja uma instrução com argumentos
-                                            self.memory.push(
-                                                Instruction {
-                                                    opcode: opcode,
-                                                    arg: 0,
-                                                    line: actual_raw_token.line,
-                                                    col: actual_raw_token.col,
-                                                }
-                                            );
+                                                    self.memory.push(
+                                                        Instruction {
+                                                            opcode: opcode,
+                                                            arg: 0,
+                                                            line: actual_raw_token.line,
+                                                            col: actual_raw_token.col,
+                                                        }
+                                                    );
                                             
-                                            token_counter += 1;
-                                        }
+                                                    token_counter += 1;
+                                                }
                                             },
                                             None => {
                                                 logkit::exit_with_positional_error_message("Expected an valid instruction", actual_raw_token.line, actual_raw_token.col);
@@ -858,11 +879,11 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Jpos => {
-                            if instruction.arg < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
+                            if next_instruction_line < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
                             }
-
-                            match self.get_closest_instruction_index_by_line( instruction.arg as u32) {
+                            match self.get_closest_instruction_index_by_line( next_instruction_line as u32 ) {
                                 Some(next_instruction_index) => {
                                     if self.ac >= 0 {
                                         self.pc = next_instruction_index;
@@ -871,16 +892,17 @@ impl VirtualMachine {
                                     }
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    break;
                                 }
                             }
                         },
                         Opcode::Jzer => {
-                            if instruction.arg < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
+                            if next_instruction_line < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
                             }
 
-                            match self.get_closest_instruction_index_by_line(instruction.arg as u32) {
+                            match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
                                 Some(next_instruction_index) => {
                                     if self.ac == 0 {
                                         self.pc = next_instruction_index;
@@ -889,22 +911,23 @@ impl VirtualMachine {
                                     }
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    break;
                                 }
                             }
                             
                         },
                         Opcode::Jump => {
-                            if instruction.arg < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
+                            if next_instruction_line < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
                             }
                             
-                            match self.get_closest_instruction_index_by_line(instruction.arg as u32) {
+                            match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
                                 Some(next_instruction_index) => {
                                     self.pc = next_instruction_index;
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    break;
                                 }
                             }
                         },
@@ -971,11 +994,12 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Jneg => {
-                            if instruction.arg < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
+                            if next_instruction_line < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
                             }
 
-                            match self.get_closest_instruction_index_by_line(instruction.arg as u32) {
+                            match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
                                 Some(next_instruction_index) => {
                                     if self.ac < 0 {
                                         self.pc = next_instruction_index;
@@ -984,16 +1008,17 @@ impl VirtualMachine {
                                     }
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    break;
                                 }
                             }
                         },
                         Opcode::Jnze => {
-                            if instruction.arg < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
+                            if next_instruction_line < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
                             }
 
-                            match self.get_closest_instruction_index_by_line(instruction.arg as u32) {
+                            match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
                                 Some(next_instruction_index) => {
                                     if self.ac != 0 {
                                         self.pc = next_instruction_index;
@@ -1002,16 +1027,17 @@ impl VirtualMachine {
                                     }
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    break;
                                 }
                             }
                         },
                         Opcode::Call => {
-                            if instruction.arg < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
+                            if next_instruction_line < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
                             }
 
-                            match self.get_closest_instruction_index_by_line(instruction.arg as u32) {
+                            match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
                                 Some(next_instruction_index) => {
                                     match self.sp.checked_sub(1) {
                                         Some(aux) => {
@@ -1046,7 +1072,7 @@ impl VirtualMachine {
                                     self.pc = next_instruction_index;
                                 },
                                 None => {
-                                    logkit::exit_with_positional_error_message( format!("Instruction, or closest instruction on line {}, not found", instruction.arg).as_str(), instruction.line, instruction.col);
+                                    break;
                                 }
                             }
 
@@ -1267,11 +1293,12 @@ impl VirtualMachine {
                         },
 
                         Opcode::Printinstruction => {
-                            if instruction.arg < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
+                            if next_instruction_line < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
                             }
 
-                            match self.get_closest_instruction_index_by_line(instruction.arg as u32) {
+                            match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
                                 Some(instruction_index) => {
                                     let instruction = self.memory.get(instruction_index as usize).unwrap();
                                     print!("{}", instruction.to_hash());
@@ -1286,11 +1313,12 @@ impl VirtualMachine {
                         },
 
                         Opcode::Printlninstruction => {
-                            if instruction.arg < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive value", instruction.line, instruction.col);
+                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
+                            if next_instruction_line < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
                             }
 
-                            match self.get_closest_instruction_index_by_line(instruction.arg as u32) {
+                            match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
                                 Some(instruction_index) => {
                                     let instruction = self.memory.get(instruction_index as usize).unwrap();
                                     println!("{}", instruction.to_hash());
@@ -1551,8 +1579,9 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize, is_dot_byte: b
                         aux_value_counter += 1;
                     },
                     _ => {
+                        /*
                         if aux_raw_token.is_char_literal() {
-                            let val = aux_raw_token.to_char_literal() as i16;
+                            let val = aux_raw_token.from_char_to_i16() as i16;
                             if is_dot_byte {
                                 if val < 0 || val > 255 {
                                     logkit::exit_with_positional_error_message("Value out of range (0...255)", aux_raw_token.line, aux_raw_token.col);
@@ -1561,7 +1590,7 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize, is_dot_byte: b
                             values.push(val);
                             aux_value_counter += 1;
                         } else if aux_raw_token.is_hex_literal() {
-                            let value_option = aux_raw_token.to_hex_literal_i16();
+                            let value_option = aux_raw_token.from_hex_to_i16();
                             match value_option {
                                 Some(value) => {
                                     if is_dot_byte {
@@ -1577,7 +1606,7 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize, is_dot_byte: b
                                 }
                             }
                         } else if aux_raw_token.is_binary_literal() {
-                            let value_option = aux_raw_token.to_binary_literal_i16();
+                            let value_option = aux_raw_token.from_binary_to_i16();
                             match value_option {
                                 Some(value) => {
                                     if is_dot_byte {
@@ -1618,6 +1647,32 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize, is_dot_byte: b
                                 }
                             }
                         }
+                        */
+                        
+                        match aux_raw_token.to_i16_value() {
+                            Some(value) => {
+                                if is_dot_byte {
+                                    if value < 0 || value > 255 {
+                                        logkit::exit_with_positional_error_message("Value out of range (0...255)", aux_raw_token.line, aux_raw_token.col);
+                                    }
+                                }
+                                values.push(value);
+                                aux_value_counter += 1;
+                            },
+                            None => {
+                                if vector.get(aux_value_counter - 1).unwrap().get_token().as_str() == "," {
+                                    if is_dot_byte {
+                                        logkit::exit_with_positional_error_message("Expected a valid value in range of 0...255", aux_raw_token.line, aux_raw_token.col);
+                                    } else {
+                                        logkit::exit_with_positional_error_message("Expected a valid value in range of -32768...32767", aux_raw_token.line, aux_raw_token.col);
+                                    }
+                                } else {
+                                    break 'aux_value_counter_loop;
+                                }
+                                break 'aux_value_counter_loop;
+                            }
+                        }
+
                     }
                 }
             },

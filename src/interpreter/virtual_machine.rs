@@ -120,7 +120,12 @@ impl VirtualMachine {
                     is_comment = false;
                     line_has_indentation = false;
                 },
-                '#' => is_comment = true,
+                '#' => {
+                    if !is_literal_str && !is_literal_char {
+                        is_comment = true;
+                        continue;
+                    }
+                },
                 _ => {}
             }
             if is_comment {

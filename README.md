@@ -16,8 +16,7 @@ The following example demonstrates a simple program that prints the string "Hell
 ```python
 # program to print a string
 .data
-STRING: .asciiz "Hello, World!" # alocates a string in memory
-ONE: .word 1                    # alocates a word in memory for a auxiliar variable
+    STRING: .asciiz "Hello, World!" # alocates a string in memory
 .text
     LOCO STRING         # ac = STRING as a pointer
     SWAP                # ac <-> sp

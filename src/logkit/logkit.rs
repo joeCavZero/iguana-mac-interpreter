@@ -82,11 +82,11 @@ pub fn exit_with_error_message(message: &str) {
     std::process::exit(0);
 }
 
-pub fn message_compatible_expected_program_arguments(failed_argument: &str) {
+pub fn message_wrong_program_arguments() {
     println!(
         "{} {}",
         interpreter_name_piece(),
-        format!("Invalid argument: {} , expected 'run <file>' or 'info'", failed_argument).as_str()
+        "Invalid arguments. Usage: 'info' or 'run <file>' or 'binary <file> <output>'."
     );
     std::process::exit(0);
 }

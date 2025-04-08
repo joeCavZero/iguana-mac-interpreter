@@ -135,3 +135,27 @@ pub fn tokenize(file_path: &String) -> Vec<Token> {
     
     tokens
 }
+
+pub fn remove_system_call_tokens(tokens: &Vec<Token>) -> Vec<Token> {
+    let mut aux_tokens: Vec<Token> = Vec::new();
+    let mut i = 0;
+    while i < tokens.len() {
+        let token = &tokens[i];
+        match token.get_token().as_str() {
+            "PRINTLNAC" | "PRINTAC" | "PRINTLNACCHAR" | "PRINTACCHAR" | "PRINTSP" | "PRINTLNSP" => {
+                i += 1;
+                continue;
+            }
+            "PRINTLNINSTRUCTION" | "PRINTINSTRUCTION" => {
+                i += 2;
+                continue;
+            }
+            _ => {
+                aux_tokens.push(token.clone());
+                i += 1;
+            }
+        }
+    }
+
+    aux_tokens
+}

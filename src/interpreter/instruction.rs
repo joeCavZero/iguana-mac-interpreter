@@ -9,7 +9,7 @@ pub struct  Instruction {
 }
 
 impl Instruction {
-    pub fn to_hash(&self) -> String {
+    pub fn to_format(&self) -> String {
         format!("{:08b}{:016b}", self.opcode as u8, self.arg)
     }
 }

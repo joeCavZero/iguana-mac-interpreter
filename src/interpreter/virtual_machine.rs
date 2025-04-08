@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fs::File;
 use std::io::{self, Write};
 
 use super::token::Token;
@@ -8,6 +9,11 @@ use super::super::logkit;
 
 const STACK_SIZE: usize = 32768;
 
+pub enum InterpreterMode {
+    Execute,
+    Binary,
+}
+
 enum Section {
     Data,
     Text,
@@ -15,6 +21,7 @@ enum Section {
 
 pub struct VirtualMachine {
     file_path: String,
+    output_path: String,
     ac: i16, // Accumulator
     pc: u32, // Program Counter
     
@@ -28,9 +35,10 @@ pub struct VirtualMachine {
 
 #[allow(dead_code)]
 impl VirtualMachine {
-    pub fn new(file_path: &str) -> VirtualMachine {
+    pub fn new(file_path: &str, output_path: &str) -> VirtualMachine {
         let mut vm = VirtualMachine {
             file_path: file_path.to_string(),
+            output_path: output_path.to_string(),
             ac: 0,
             pc: 0,
             sp: (STACK_SIZE - 1) as i16,
@@ -46,21 +54,36 @@ impl VirtualMachine {
         vm
     }
 
-    pub fn run(&mut self) {
-        let tokens = tokenizer::tokenize(&self.file_path);
-    
+    pub fn run(&mut self, interpreter_mode: InterpreterMode) {
+        let tokens = match interpreter_mode {
+            InterpreterMode::Execute => {
+                tokenizer::tokenize(&self.file_path)
+            }
+            InterpreterMode::Binary => {
+                let tokens = tokenizer::tokenize(&self.file_path);
+                tokenizer::remove_system_call_tokens(&tokens)
+            }
+            
+        };
+
         //self.print_tokens(&tokens);
 
-        self.first_pass(&tokens);
+        let is_data_memory_initialized = self.first_pass(&tokens);
         self.second_pass(&tokens);
         
         //self.print_stack();
         //self.print_symbol_table();
         //self.print_memory();
-
-        self.execute();
+        match interpreter_mode {
+            InterpreterMode::Execute => {
+                self.execute();
+            },
+            InterpreterMode::Binary => {
+                self.generate_binary( is_data_memory_initialized );
+            }
+        }
     }
-    
+
     fn print_stack(&self) {
         println!("======== Stack ========");
         for i in ((self.sp as usize) .. STACK_SIZE).rev() {
@@ -93,7 +116,7 @@ impl VirtualMachine {
         println!("=======================");
     }
 
-    fn first_pass(&mut self, raw_tokens_vector: &Vec<Token>){
+    fn first_pass(&mut self, raw_tokens_vector: &Vec<Token>) -> bool {
         // ==== PRIMEIRA PASSAGEM ====
         let mut section = Section::Text;
         let mut last_line_initialized = 0;
@@ -499,6 +522,8 @@ impl VirtualMachine {
             }
             token_counter += 1;
         }
+
+        is_data_memory_initialized
     }
 
     fn second_pass(&mut self, raw_tokens: &Vec<Token>) {
@@ -1165,7 +1190,7 @@ impl VirtualMachine {
                             match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
                                 Some(instruction_index) => {
                                     let instruction = self.memory.get(instruction_index as usize).unwrap();
-                                    print!("{}", instruction.to_hash());
+                                    print!("{}", instruction.to_format());
                                     io::stdout().flush().unwrap();
                                 },
                                 None => {
@@ -1189,7 +1214,7 @@ impl VirtualMachine {
                             match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
                                 Some(instruction_index) => {
                                     let instruction = self.memory.get(instruction_index as usize).unwrap();
-                                    println!("{}", instruction.to_hash());
+                                    println!("{}", instruction.to_format());
                                     io::stdout().flush().unwrap();
                                 },
                                 None => {
@@ -1401,6 +1426,55 @@ impl VirtualMachine {
                 None => {
                     break;
                 }
+            }
+        }
+    }
+
+
+    fn generate_binary(&mut self, is_data_memory_initialized: bool) {
+        match File::create( self.output_path.clone() ) {
+            Ok(mut output_file) => {
+                match output_file.write(".data\n".as_bytes()) {
+                    Ok(_) => {},
+                    Err(_) => {
+                        logkit::exit_with_error_message("Error writing in the output file.");
+                    }
+                }
+
+                if is_data_memory_initialized {
+                    let mut i = STACK_SIZE-1;
+                    while i >= self.sp as usize {
+                        let number_in_binary = format!("{:016b}", self.stack[i as usize]);
+                        match output_file.write( format!( "{}\n", number_in_binary ).as_bytes() ) {
+                            Ok(_) => {},
+                            Err(_) => {
+                                logkit::exit_with_error_message("Error writing in the output file.");
+                            }
+                        }
+                        i -= 1;
+                    }
+                }
+
+                match output_file.write(".text\n".as_bytes()) {
+                    Ok(_) => {},
+                    Err(_) => {
+                        logkit::exit_with_error_message("Error writing in the output file.");
+                    }
+                }
+
+                for instr in self.memory.iter() {
+                    let instr_in_binary = instr.to_format();
+                    match output_file.write( format!( "{}\n", instr_in_binary ).as_bytes() ) {
+                        Ok(_) => {},
+                        Err(_) => {
+                            logkit::exit_with_error_message("Error writing in the output file.");
+                        }
+                    }
+                }
+
+            }
+            Err(_) => {
+                logkit::exit_with_error_message("Error creating the output file.");
             }
         }
     }

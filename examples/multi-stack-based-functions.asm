@@ -18,7 +18,7 @@
     # Print recursive function header
     LOCO RECURSIVE_FUNCTION_STR_1 PUSH
     CALL PRINT_STRING
-    DESP 1
+    INSP 1
     #
 
     # Push the param and call the recursive function
@@ -27,7 +27,7 @@
     # Print returned value of recursive function
     LOCO RECURSIVE_FUNCTION_STR_3 PUSH
     CALL PRINT_STRING
-    DESP 1
+    INSP 1
     LODL 0 PRINTLNAC
     LODD NEW_LINE PRINTACCHAR
     #
@@ -39,7 +39,7 @@
     # Print
     LOCO FIBONACCI_STR_3 PUSH
     CALL PRINT_STRING
-    DESP 1
+    INSP 1
     LODL 0
     PRINTLNAC
     #
@@ -50,7 +50,7 @@ FIBONACCI:
     # Print
     LOCO FIBONACCI_STR_1 PUSH
     CALL PRINT_STRING
-    DESP 1
+    INSP 1
     #
     # Variables
     LOCO 0 PUSH
@@ -68,7 +68,7 @@ FIBONACCI:
     # Print
     LOCO FIBONACCI_STR_2 PUSH
     CALL PRINT_STRING
-    DESP 1
+    INSP 1
     #
     LODL 2
     PRINTLNAC
@@ -80,7 +80,7 @@ FIBONACCI:
     JUMP FIBONACCI_LOOP
   FIBONACCI_END:
     LODL 2
-    DESP 4
+    INSP 4
     STOL 1
     RETN
 
@@ -98,13 +98,13 @@ RECURSIVE_FUNCTION:
     # Print
     LOCO RECURSIVE_FUNCTION_STR_2 PUSH
     CALL PRINT_STRING
-    DESP 1
+    INSP 1
     #
         # [ARG, RTN, ARG+5, 1000, 5]
     LODL 2
     PRINTLNAC
     SUBL 1
-    DESP 2
+    INSP 2
         # [ARG, RTN, ARG+5]
     JPOS RECURSIVE_FUNCTION_REGRESS
     CALL RECURSIVE_FUNCTION
@@ -112,7 +112,7 @@ RECURSIVE_FUNCTION:
         # [ARG, RTN, LAST_RESULT]
     LODL 0
     STOL 2
-    DESP 1
+    INSP 1
         # [RESULT, RTN]
     RETN
 
@@ -120,7 +120,7 @@ RECURSIVE_FUNCTION:
 
 PRINT_STRING:
     LODL 1
-    INSP 1
+    DESP 1
     STOL 0
     #[ ARG, RETN, AUX_ARG ]
   PRINT_STRING_LOOP:
@@ -136,8 +136,8 @@ PRINT_STRING:
     LODL 2
     SUBL 0
     STOL 2
-    DESP 2
+    INSP 2
     JUMP PRINT_STRING_LOOP
   PRINT_STRING_END:
-    DESP 2
+    INSP 2
     RETN

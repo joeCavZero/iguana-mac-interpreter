@@ -10,7 +10,7 @@
     # in this moment the stack is something like this: [ NUMBER1, NUMBER2 ]
     CALL ADD_TWO_NUMBERS    # call the function ADD_TWO_NUMBERS (the return address is pushed to the stack)
     # in this moment the stack is something like this: [ RESULT, NUMBER2 ]
-    DESP 1                  # decrement the stack pointer 1 position
+    INSP 1                  # decrement the stack pointer 1 position
     # in this moment the stack is something like this: [ RESULT ]
     CALL PRINT              # call the function PRINT (the return address is pushed to the stack)
     JUMP END                # jump to END

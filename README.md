@@ -24,7 +24,7 @@ LOOP:
     LODL 0              # ac = *sp
     JZER END            # if ac == 0 goto END
     PRINTACCHAR         # print ac as a char
-    INSP 1              # sp = sp - 1
+    DESP 1              # sp = sp - 1
     JUMP LOOP           # goto LOOP
 END:
     HALT                # finishes the program

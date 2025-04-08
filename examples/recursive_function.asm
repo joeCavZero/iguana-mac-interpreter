@@ -7,7 +7,7 @@
     INCR: .word 5
     NEW_LINE: .ascii "\n"
 .text
-    INSP 1 # increases a space to store the function argument
+    DESP 1 # increases one space to store the function argument
     LOCO 0 # this number is the function argument
     STOL 0 # store the function argument
     CALL RECURSIVE_FUNCTION
@@ -16,7 +16,7 @@
     PRINTLNAC
     HALT
 RECURSIVE_FUNCTION:
-    INSP 1
+    DESP 1
     # [ARG, RTN, ~]
     LODL 2
     STOL 0
@@ -32,6 +32,6 @@ RECURSIVE_FUNCTION:
     # [ARG, RTN, RESULT]
     LODL 0
     STOL 2
-    DESP 1
+    INSP 1
     # [RESULT, RTN]
     RETN

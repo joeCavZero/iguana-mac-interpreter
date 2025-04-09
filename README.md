@@ -342,6 +342,18 @@ iguana info
   **Pseudo-behavior**: `print( format( pc_of_instruction_on_line( X ) ) )`
 
 
+## Input Operations
+- **INPUTAC**  
+  **Behavior**: Reads an number from the user and stores it in the accumulator (`ac`).  
+  **Pseudo-behavior**: `ac = input_number()`
+
+- **INPUTACCHAR**  
+  **Behavior**: Reads a character from the user and stores it in the accumulator (`ac`).  
+  **Pseudo-behavior**: `ac = input_character()`
+
+- **INPUTSTRING X**  
+  **Behavior**: Reads a string from the user and stores it in the memory at address `X` with a null terminator. 
+  **Pseudo-behavior**: `M[X] = input_string() + '\0'`
 
 ## Custom Operations
 

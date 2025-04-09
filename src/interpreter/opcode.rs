@@ -58,6 +58,7 @@ pub enum Opcode {
     Printlnsp, Printsp, 
     Printlninstruction, Printinstruction, 
 
+    Inputac, Inputacchar, Inputstring,
 }
 
 
@@ -66,7 +67,8 @@ impl Opcode {
         match op {
             Opcode::Pshi | Opcode::Popi | Opcode::Push | Opcode::Pop | Opcode::Retn | Opcode::Swap | Opcode::Halt |
             Opcode::Not |
-            Opcode::Printlnac | Opcode::Printac | Opcode::Printlnacchar | Opcode::Printacchar    | Opcode::Printsp | Opcode::Printlnsp
+            Opcode::Printlnac | Opcode::Printac | Opcode::Printlnacchar | Opcode::Printacchar    | Opcode::Printsp | Opcode::Printlnsp |
+            Opcode::Inputac | Opcode::Inputacchar
                 => false,
             _
                 => true,
@@ -133,6 +135,11 @@ impl Opcode {
 
             "SLEEPD" => Some(Opcode::Sleepd),
             "SLEEPI" => Some(Opcode::Sleepi),
+
+            "INPUTAC" => Some(Opcode::Inputac),
+            "INPUTACCHAR" => Some(Opcode::Inputacchar),
+            "INPUTSTRING" => Some(Opcode::Inputstring),
+
             _ => None,
         }
     }

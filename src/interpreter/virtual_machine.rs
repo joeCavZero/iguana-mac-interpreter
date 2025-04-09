@@ -62,7 +62,7 @@ impl VirtualMachine {
             }
             InterpreterMode::Binary => {
                 let tokens = tokenizer::tokenize(&self.file_path);
-                tokenizer::remove_system_call_tokens(&tokens)
+                tokenizer::get_removed_system_call_tokens(&tokens)
             }
             
         };
@@ -1409,6 +1409,76 @@ impl VirtualMachine {
                             }
                             std::thread::sleep(std::time::Duration::from_millis(instruction.arg as u64));
                             self.pc += 1;
+                        }
+
+                        Opcode::Inputac => {
+                            let mut input = String::new();
+                            match io::stdin().read_line(&mut input) {
+                                Ok(_) => {
+                                    match input.trim().parse::<i16>() {
+                                        Ok(value) => {
+                                            self.ac = value;
+                                        },
+                                        Err(_) => {
+                                            logkit::exit_with_positional_error_message("Invalid input. Expected a valid 16 bits number.", instruction.line, instruction.col);
+                                        }
+                                    }
+                                }
+                                Err(_) => {
+                                    logkit::exit_with_positional_error_message("Error reading input.", instruction.line, instruction.col);
+                                }
+                            }
+
+                            self.pc += 1;
+                        }
+
+                        Opcode::Inputacchar => {
+                            let mut input = String::new();
+                            match io::stdin().read_line(&mut input) {
+                                Ok(_) => {
+                                    input = input.trim().to_string();
+                                    if input.len() != 1 {
+                                        logkit::exit_with_positional_error_message("Invalid input. Expected a single character.", instruction.line, instruction.col);
+                                    }
+
+                                    let value = input.chars().nth(0).unwrap() as i16;
+
+                                    self.ac = value;
+                                }
+                                Err(_) => {
+                                    logkit::exit_with_positional_error_message("Error reading input.", instruction.line, instruction.col);
+                                }
+                            }
+
+                            self.pc += 1;
+                        }
+
+                        Opcode::Inputstring => {
+                            let mut input = String::new();
+
+                            match io::stdin().read_line(&mut input) {
+                                Ok(_) => {
+                                    input = input.trim().to_string();
+                                    let mut input_values_vector: Vec<i16> = Vec::new();
+                                    for ch in input.chars() {
+                                        input_values_vector.push(ch as i16);
+                                    }
+                                    input_values_vector.push(0);
+                                    for (i, ch) in input_values_vector.iter().enumerate() {
+                                        match self.set_stack_value( instruction.arg as i64 - i as i64, *ch ) {
+                                            Ok(_) => {},
+                                            Err(_) => {
+                                                logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", instruction.arg as i64 + i as i64).as_str(), instruction.line, instruction.col);
+                                            }
+                                        }
+                                    }
+                                }
+                                Err(_) => {
+                                    logkit::exit_with_positional_error_message("Error reading input.", instruction.line, instruction.col);
+                                }
+                            }
+
+                            self.pc += 1
                         }
                     }
                     

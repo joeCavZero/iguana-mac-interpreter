@@ -1,6 +1,6 @@
 use crate::logkit;
 
-use super::token::Token;
+use super::{opcode::Opcode, token::Token};
 
 pub fn tokenize(file_path: &String) -> Vec<Token> {
     let raw_content = match std::fs::read_to_string(file_path) {
@@ -137,36 +137,81 @@ pub fn tokenize(file_path: &String) -> Vec<Token> {
 }
 
 pub fn get_removed_system_call_tokens(tokens: &Vec<Token>) -> Vec<Token> {
-    let mut aux_tokens: Vec<Token> = Vec::new();
+    let mut new_tokens_vector: Vec<Token> = Vec::new();
     let mut i = 0;
     while i < tokens.len() {
-        let token = &tokens[i];
-        match token.get_token().as_str() {
-            "PRINTLNAC" | "PRINTAC" | "PRINTLNACCHAR" | "PRINTACCHAR" | "PRINTSP" | "PRINTLNSP" | "INPUTAC" | "INPUTACCHAR" => {
-                i += 1;
-                continue;
+        match tokens.get(i) {
+            Some(token) => {
+                match Opcode::from_str( token.get_token().as_str() ) {
+                    Some(op) => {
+                        if Opcode::is_argumented(op) {
+                            match tokens.get(i + 1) {
+                                Some( next_token ) => {
+                                    if Opcode::from_str( next_token.get_token().as_str() ).is_some() {
+                                        logkit::exit_with_positional_error_message(
+                                            format!("Invalid argument for operation: {}", token.get_token()).as_str(),
+                                            next_token.line, next_token.col
+                                        );
+                                    } else {
+                                        match op {
+                                            Opcode::Printlninstruction | Opcode::Printinstruction | Opcode::Inputstring => {
+                                                i += 2;
+                                                continue;
+                                            }
+                                            _ => {
+                                                new_tokens_vector.push( token.clone() );
+                                                new_tokens_vector.push( next_token.clone() );
+                                                i += 2;
+                                                continue;
+                                            }
+                                        }
+                                    }
+                                        
+                                }
+                                None => {
+                                    logkit::exit_with_positional_error_message( "Argument for operation not found.", token.line, token.col );
+                                }
+                            }
+                        } else { // Casko não seja uma operação com argumento
+                            match op {
+                                Opcode::Printlnac | Opcode::Printac | 
+                                Opcode::Printlnacchar | Opcode::Printacchar | 
+                                Opcode::Printsp | Opcode::Printlnsp |
+                                Opcode::Inputac | Opcode::Inputacchar => {
+                                    i += 1;
+                                    continue;
+                                }
+                                _ => {
+                                    new_tokens_vector.push( token.clone() );
+                                    i += 1;
+                                    continue;
+                                }        
+                            }
+                        }
+                    }
+                    None => {
+                        new_tokens_vector.push( token.clone() );
+                        i += 1;
+                        continue;
+                    }
+                }
             }
-            "PRINTLNINSTRUCTION" | "PRINTINSTRUCTION" | "INPUTSTRING" => {
-                i += 2;
-                continue;
-            }
-            _ => {
-                aux_tokens.push(token.clone());
-                i += 1;
+            None => {
+                logkit::exit_with_error_message("Error: Token not found.");
             }
         }
     }
 
 
     // aqui vamos remover as labels remanescentes no final do vetor
-    for i in (0..aux_tokens.len()).rev() {
-        let token = &aux_tokens[i];
+    for i in (0..new_tokens_vector.len()).rev() {
+        let token = &new_tokens_vector[i];
         if token.is_label() {
-            aux_tokens.remove(i);
+            new_tokens_vector.remove(i);
         } else {
             break;
         }
     }
 
-    aux_tokens
+    new_tokens_vector
 }

@@ -187,11 +187,11 @@ iguana info
 
 - **INSP X**  
   **Behavior**: Increments the stack pointer (`sp`) by `X`.  
-  **Pseudo-behavior**: `sp = sp - X`
+  **Pseudo-behavior**: `sp = sp + X`
 
 - **DESP X**  
   **Behavior**: Decrements the stack pointer (`sp`) by `X`.  
-  **Pseudo-behavior**: `sp = sp + X`
+  **Pseudo-behavior**: `sp = sp - X`
 
 ## Arithmetic Operations
 

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fs::File;
+use std::i16;
 use std::io::{self, Write};
 
 use super::token::Token;
@@ -70,7 +71,8 @@ impl VirtualMachine {
 
         let is_data_memory_initialized = self.first_pass(&tokens);
         self.second_pass(&tokens);
-        
+        self.resolve_branch_addresses();
+
         //self.print_stack();
         //self.print_symbol_table();
         //self.print_memory();
@@ -567,7 +569,7 @@ impl VirtualMachine {
                                                                             match next_raw_token.to_u32_value() {
                                                                                 Some(v) => v,
                                                                                 None => {
-                                                                                    logkit::exit_with_positional_error_message("Expected a label or a valid value in range of 32 bits after instruction", next_raw_token.line, next_raw_token.col);
+                                                                                    logkit::exit_with_positional_error_message("Expected a label or a valid positive value after instruction", next_raw_token.line, next_raw_token.col);
                                                                                     0
                                                                                 }
                                                                             }
@@ -718,6 +720,36 @@ impl VirtualMachine {
         
     }
 
+    fn resolve_branch_addresses(&mut self) {
+        for (i, instr) in self.memory.clone().iter_mut().enumerate() {
+            match instr.opcode {
+                Opcode::Jpos | Opcode::Jzer | Opcode::Jump | Opcode::Jneg | Opcode::Jnze | Opcode::Call | Opcode::Printlninstruction | Opcode::Printinstruction => {
+                    let targer_instruction_line = instr.line as i64 + instr.arg as i64;
+                    if targer_instruction_line < 0 {
+                        logkit::exit_with_positional_error_message("Expected a positive line value", instr.line, instr.col);
+                    }
+
+                    match self.get_closest_instruction_index_by_line(targer_instruction_line as u32) {
+                        Some(target_instruction_index) => {
+                            match i16::try_from( target_instruction_index as i64 - i as i64 ) {
+                                Ok(offset) => {
+                                    self.memory[i].arg = offset;
+                                }
+                                Err(_) => {
+                                    logkit::exit_with_positional_error_message("Branch instruction out of bounds.", instr.line, instr.col);
+                                }
+                            }
+                        }
+                        None => {
+                            self.memory[i].arg = i16::MAX;
+                        }
+                    }
+                },
+                _ => {}
+            }
+        }
+    }
+
     fn execute(&mut self) {
         loop {
             let instruction_option = self.memory.get(self.pc as usize).cloned();
@@ -787,57 +819,34 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Jpos => {
-                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
-                            if next_instruction_line < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
+                            let target_instruction_pc = self.pc as i64 + instruction.arg as i64;
+                            if target_instruction_pc < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive pc value", instruction.line, instruction.col);
                             }
-                            match self.get_closest_instruction_index_by_line( next_instruction_line as u32 ) {
-                                Some(next_instruction_index) => {
-                                    if self.ac >= 0 {
-                                        self.pc = next_instruction_index;
-                                    } else {
-                                        self.pc += 1;
-                                    }
-                                },
-                                None => {
-                                    break;
-                                }
+
+                            if self.ac > 0 {
+                                self.pc = target_instruction_pc as u32;
+                            } else {
+                                self.pc += 1;
                             }
                         },
                         Opcode::Jzer => {
-                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
-                            if next_instruction_line < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
+                            let target_instruction_pc = self.pc as i64 + instruction.arg as i64;
+                            if target_instruction_pc < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive pc value", instruction.line, instruction.col);
                             }
-
-                            match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
-                                Some(next_instruction_index) => {
-                                    if self.ac == 0 {
-                                        self.pc = next_instruction_index;
-                                    } else {
-                                        self.pc += 1;
-                                    }
-                                },
-                                None => {
-                                    break;
-                                }
+                            if self.ac == 0 {
+                                self.pc = target_instruction_pc as u32;
+                            } else {
+                                self.pc += 1;
                             }
-                            
                         },
                         Opcode::Jump => {
-                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
-                            if next_instruction_line < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
+                            let target_instruction_pc = self.pc as i64 + instruction.arg as i64;
+                            if target_instruction_pc < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive pc value", instruction.line, instruction.col);
                             }
-                            
-                            match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
-                                Some(next_instruction_index) => {
-                                    self.pc = next_instruction_index;
-                                },
-                                None => {
-                                    break;
-                                }
-                            }
+                            self.pc = target_instruction_pc as u32;
                         },
                         Opcode::Loco => {
                             self.ac = instruction.arg;
@@ -902,88 +911,75 @@ impl VirtualMachine {
                             self.pc += 1;
                         },
                         Opcode::Jneg => {
-                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
-                            if next_instruction_line < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
+                            let target_instruction_index = self.pc as i64 + instruction.arg as i64;
+
+                            if target_instruction_index < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive pc value", instruction.line, instruction.col);
                             }
 
-                            match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
-                                Some(next_instruction_index) => {
-                                    if self.ac < 0 {
-                                        self.pc = next_instruction_index;
-                                    } else {
-                                        self.pc += 1;
-                                    }
-                                },
-                                None => {
-                                    break;
-                                }
+                            if self.ac < 0 {
+                                self.pc = target_instruction_index as u32;
+                            } else {
+                                self.pc += 1;
                             }
+
                         },
                         Opcode::Jnze => {
-                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
-                            if next_instruction_line < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
+                            let targe_instruction_index = self.pc as i64 + instruction.arg as i64;
+                            if targe_instruction_index < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive pc value", instruction.line, instruction.col);
+                            }
+                            if self.ac != 0 {
+                                self.pc = targe_instruction_index as u32;
+                            } else {
+                                self.pc += 1;
                             }
 
-                            match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
-                                Some(next_instruction_index) => {
-                                    if self.ac != 0 {
-                                        self.pc = next_instruction_index;
-                                    } else {
-                                        self.pc += 1;
-                                    }
-                                },
-                                None => {
-                                    break;
-                                }
-                            }
                         },
                         Opcode::Call => {
-                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
-                            if next_instruction_line < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
+                            let target_instruction_index = self.pc as i64 + instruction.arg as i64;
+                            if target_instruction_index < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive pc value", instruction.line, instruction.col);
                             }
 
-                            match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
-                                Some(next_instruction_index) => {
-                                    match self.sp.checked_sub(1) {
-                                        Some(aux) => {
-                                            self.sp = aux;
-                                        },
-                                        None => {
-                                            logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
-                                        }
-                                    }
-
-                                    let next_pc_aux = match self.pc.checked_add(1) {
-                                        Some(aux) => {
-                                            if aux >= i16::MAX as u32 {
-                                                logkit::exit_with_positional_error_message("PC out of bounds for insertion in stack", instruction.line, instruction.col);
-                                                0
-                                            } else {
-                                                aux
-                                            }
-                                        },
-                                        None => {
-                                            logkit::exit_with_positional_error_message("PC out of bounds", instruction.line, instruction.col);
-                                            0
-                                        }
-                                    };
-
-                                    match self.set_stack_value(self.sp as i64, next_pc_aux as i16) {
-                                        Ok(_) => {},
-                                        Err(_) => {
-                                            logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
-                                        }
-                                    }
-                                    self.pc = next_instruction_index;
+                            match self.sp.checked_sub(1) {
+                                Some(aux) => {
+                                    self.sp = aux;
                                 },
                                 None => {
-                                    break;
+                                    logkit::exit_with_positional_error_message("Stack pointer out of bounds", instruction.line, instruction.col);
                                 }
                             }
 
+                            let next_pc = match self.pc.checked_add(1) {
+                                Some(aux) => {
+                                    if aux >= i16::MAX as u32 {
+                                        logkit::exit_with_positional_error_message("PC out of bounds for insertion in stack", instruction.line, instruction.col);
+                                        0
+                                    } else {
+                                        match i16::try_from(aux) {
+                                            Ok(aux) => aux,
+                                            Err(_) => {
+                                                logkit::exit_with_positional_error_message("PC out of bounds for insertion in stack", instruction.line, instruction.col);
+                                                0
+                                            }
+                                        }
+                                    }
+                                },
+                                None => {
+                                    logkit::exit_with_positional_error_message("PC out of bounds", instruction.line, instruction.col);
+                                    0
+                                }
+                            };
+
+                            match self.set_stack_value( self.sp as i64, next_pc ) {
+                                Ok(_) => {},
+                                Err(_) => {
+                                    logkit::exit_with_positional_error_message(format!("Address {} out of stack bounds", self.sp).as_str(), instruction.line, instruction.col);
+                                }
+                            }
+
+                            self.pc = target_instruction_index as u32;
 
                         },
                         Opcode::Pshi => {
@@ -1182,14 +1178,14 @@ impl VirtualMachine {
                         },
 
                         Opcode::Printinstruction => {
-                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
-                            if next_instruction_line < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
+                            let target_instruction_index = self.pc as i64 + instruction.arg as i64;
+
+                            if target_instruction_index < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive pc value", instruction.line, instruction.col);
                             }
 
-                            match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
-                                Some(instruction_index) => {
-                                    let instruction = self.memory.get(instruction_index as usize).unwrap();
+                            match self.memory.get(target_instruction_index as usize) {
+                                Some(instruction) => {
                                     print!("{}", instruction.to_format());
                                     io::stdout().flush().unwrap();
                                 },
@@ -1201,19 +1197,16 @@ impl VirtualMachine {
                                     );
                                 }
                             }
-
                             self.pc += 1;
                         },
 
                         Opcode::Printlninstruction => {
-                            let next_instruction_line = instruction.line as i64 + instruction.arg as i64;
-                            if next_instruction_line < 0 {
-                                logkit::exit_with_positional_error_message("Expected a positive line value", instruction.line, instruction.col);
+                            let target_instruction_index = self.pc as i64 + instruction.arg as i64;
+                            if target_instruction_index < 0 {
+                                logkit::exit_with_positional_error_message("Expected a positive pc value", instruction.line, instruction.col);
                             }
-
-                            match self.get_closest_instruction_index_by_line(next_instruction_line as u32) {
-                                Some(instruction_index) => {
-                                    let instruction = self.memory.get(instruction_index as usize).unwrap();
+                            match self.memory.get(target_instruction_index as usize) {
+                                Some(instruction) => {
                                     println!("{}", instruction.to_format());
                                     io::stdout().flush().unwrap();
                                 },

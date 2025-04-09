@@ -157,5 +157,16 @@ pub fn remove_system_call_tokens(tokens: &Vec<Token>) -> Vec<Token> {
         }
     }
 
+
+    // aqui vamos remover as labels remanescentes no final do vetor
+    for i in (0..aux_tokens.len()).rev() {
+        let token = &aux_tokens[i];
+        if token.is_label() {
+            aux_tokens.remove(i);
+        } else {
+            break;
+        }
+    }
+
     aux_tokens
 }

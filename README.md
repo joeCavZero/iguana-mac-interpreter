@@ -352,7 +352,7 @@ iguana info
   **Pseudo-behavior**: `ac = input_character()`
 
 - **INPUTSTRING X**  
-  **Behavior**: Reads a string from the user and stores it in the memory at address `X` with a null terminator. 
+  **Behavior**: Reads a string from the user and stores it in the memory at address `X` with a null terminator.  
   **Pseudo-behavior**: `M[X] = input_string() + '\0'`
 
 ## Custom Operations

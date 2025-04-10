@@ -69,7 +69,7 @@ impl VirtualMachine {
 
         //self.print_tokens(&tokens);
 
-        let is_data_memory_initialized = self.first_pass(&tokens);
+        let is_data_memory_initialized = self.first_pass(&tokens, &interpreter_mode);
         self.second_pass(&tokens);
         self.resolve_branch_addresses();
 
@@ -118,7 +118,7 @@ impl VirtualMachine {
         println!("=======================");
     }
 
-    fn first_pass(&mut self, raw_tokens_vector: &Vec<Token>) -> bool {
+    fn first_pass(&mut self, raw_tokens_vector: &Vec<Token>, interpreter_mode: &InterpreterMode) -> bool {
         // ==== PRIMEIRA PASSAGEM ====
         let mut section = Section::Text;
         let mut last_line_initialized = 0;
@@ -472,7 +472,14 @@ impl VirtualMachine {
                                                 }
                                             },
                                             None => {
-                                                logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
+                                                match interpreter_mode {
+                                                    InterpreterMode::Execute => {
+                                                        logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
+                                                    }
+                                                    InterpreterMode::Binary => {
+                                                        logkit::exit_with_positional_error_message("Expected an instruction after label, remember that syscall instructions are removed in binary mode", actual_raw_token.line, actual_raw_token.col);
+                                                    }
+                                                }
                                             }
                                         }
 
@@ -496,7 +503,14 @@ impl VirtualMachine {
                                                 );
                                             },
                                             None => {
-                                                logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
+                                                match interpreter_mode {
+                                                    InterpreterMode::Execute => {
+                                                        logkit::exit_with_positional_error_message("Expected an instruction after label", actual_raw_token.line, actual_raw_token.col);
+                                                    }
+                                                    InterpreterMode::Binary => {
+                                                        logkit::exit_with_positional_error_message("Expected an instruction after label, remember that syscall instructions are removed in binary mode", actual_raw_token.line, actual_raw_token.col);
+                                                    }
+                                                }
                                             }
                                         }
                                     } else {
@@ -1634,12 +1648,34 @@ fn get_comma_separated_values(vector: &Vec<Token>, offset: usize, is_dot_byte: b
 
 fn get_next_closest_instruction_line_by_token_counter(raw_tokens: &Vec<Token>, offset: usize) -> Option<u32> {
     let mut found_line: Option<u32> = None;
+    let mut section = Section::Text;
+
     for i in offset..raw_tokens.len() {
-        let token = raw_tokens.get(i).unwrap();
-        if Opcode::from_str( token.get_token().as_str() ).is_some() {
-            found_line = Some(token.line);
-            break;
+        let actual_token = raw_tokens.get(i).unwrap();
+        match actual_token.get_token().as_str() {
+            ".data" => {
+                section = Section::Data;
+                continue;
+            }
+            ".text" => {
+                section = Section::Text;
+                continue;
+            }
+            _ => {
+                match section {
+                    Section::Text => {
+                        if Opcode::from_str(actual_token.get_token().as_str()).is_some() {
+                            found_line = Some(actual_token.line);
+                            break;
+                        }
+                    }
+                    _ => {
+                        continue;
+                    }
+                }
+            }
         }
     }
+    
     found_line
 }

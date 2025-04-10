@@ -203,7 +203,10 @@ pub fn get_removed_system_call_tokens(tokens: &Vec<Token>) -> Vec<Token> {
     }
 
 
-    // aqui vamos remover as labels remanescentes no final do vetor
+    /*
+        aqui vamos remover as labels remanescentes no final do vetor
+        isso não previne alguns casos, mas é melhor que nada
+    */
     for i in (0..new_tokens_vector.len()).rev() {
         let token = &new_tokens_vector[i];
         if token.is_label() {

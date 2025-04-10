@@ -154,7 +154,7 @@ pub fn get_removed_system_call_tokens(tokens: &Vec<Token>) -> Vec<Token> {
                                         );
                                     } else {
                                         match op {
-                                            Opcode::Printlninstruction | Opcode::Printinstruction | Opcode::Inputstring => {
+                                            Opcode::Printlninstruction | Opcode::Printinstruction | Opcode::Sleepd | Opcode::Sleepi | Opcode::Inputstring => {
                                                 i += 2;
                                                 continue;
                                             }

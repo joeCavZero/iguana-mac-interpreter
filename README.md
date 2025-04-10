@@ -139,6 +139,7 @@ iguana info
     - **Control Flow Operations**
     - **Bitwise Operations**
     - **Debug Operations**
+    - **Input Operations**
     - **Custom Operations**
 
 ## Constant Loading
@@ -349,7 +350,7 @@ iguana info
 
 - **INPUTACCHAR**  
   **Behavior**: Reads a character from the user and stores it in the accumulator (`ac`).  
-  **Pseudo-behavior**: `ac = input_character()`
+  **Pseudo-behavior**: `ac = number( input_character() )`
 
 - **INPUTSTRING X**  
   **Behavior**: Reads a string from the user and stores it in the memory at address `X` with a null terminator.  

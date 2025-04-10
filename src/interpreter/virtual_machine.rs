@@ -151,7 +151,7 @@ impl VirtualMachine {
                                         // Isso serve para impedir que uma label tenha o mesmo nome de uma instrução
                                         if Opcode::from_str(label.as_str()).is_some() {
                                             logkit::exit_with_positional_error_message(
-                                                format!("Label '{}' cannot have the same name as an instruction.", label).as_str(),
+                                                format!("Label '{}' cannot have the same name of an instruction.", label).as_str(),
                                                 actual_raw_token.line,
                                                 actual_raw_token.col,
                                             );
@@ -477,6 +477,15 @@ impl VirtualMachine {
                                         }
 
                                         let label: String = actual_raw_token.get_token()[..actual_raw_token.get_token().len()-1].to_string();
+
+                                        // Isso serve para impedir que uma label tenha o mesmo nome de uma instrução
+                                        if Opcode::from_str(label.as_str()).is_some() {
+                                            logkit::exit_with_positional_error_message(
+                                                format!("Label '{}' cannot have the same name of an instruction.", label).as_str(),
+                                                actual_raw_token.line,
+                                                actual_raw_token.col,
+                                            );
+                                        }
                                         
                                         let next_closest_instruction_line_option: Option<u32> = get_next_closest_instruction_line_by_token_counter(&raw_tokens_vector, token_counter + 1);
                                         match next_closest_instruction_line_option {

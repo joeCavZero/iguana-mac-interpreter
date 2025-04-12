@@ -1520,6 +1520,24 @@ impl VirtualMachine {
     fn generate_binary(&mut self, is_data_memory_initialized: bool) {
         match File::create( self.output_path.clone() ) {
             Ok(mut output_file) => {
+
+                match output_file.write(".text\n".as_bytes()) {
+                    Ok(_) => {},
+                    Err(_) => {
+                        logkit::exit_with_error_message("Error writing in the output file.");
+                    }
+                }
+
+                for instr in self.memory.iter() {
+                    let instr_in_binary = instr.to_format();
+                    match output_file.write( format!( "{}\n", instr_in_binary ).as_bytes() ) {
+                        Ok(_) => {},
+                        Err(_) => {
+                            logkit::exit_with_error_message("Error writing in the output file.");
+                        }
+                    }
+                }
+
                 match output_file.write(".data\n".as_bytes()) {
                     Ok(_) => {},
                     Err(_) => {
@@ -1541,22 +1559,7 @@ impl VirtualMachine {
                     }
                 }
 
-                match output_file.write(".text\n".as_bytes()) {
-                    Ok(_) => {},
-                    Err(_) => {
-                        logkit::exit_with_error_message("Error writing in the output file.");
-                    }
-                }
-
-                for instr in self.memory.iter() {
-                    let instr_in_binary = instr.to_format();
-                    match output_file.write( format!( "{}\n", instr_in_binary ).as_bytes() ) {
-                        Ok(_) => {},
-                        Err(_) => {
-                            logkit::exit_with_error_message("Error writing in the output file.");
-                        }
-                    }
-                }
+                
 
             }
             Err(_) => {

@@ -11,14 +11,16 @@ A simple 16-bit stack-based assembly interpreter for Andrew S. Tanenbaum's MAC a
 
 # Example Program
 
-The following example demonstrates a simple program that prints the string "Hello, World!" on the console:
+The following example demonstrates a simple program that reads a string from the user and prints it to the console.
 
 ```python
 # program to print a string
 .data
-    STRING: .asciiz "Hello, World!" # alocates a string in memory
+    BUFFER: .space 1000 # alocates 1000 bytes in memory
 .text
-    LOCO STRING         # ac = STRING as a pointer
+MAIN:
+    INPUTSTRING BUFFER  # read a string from the input
+    LOCO BUFFER         # ac = BUFFER as a pointer
     SWAP                # ac <-> sp
 LOOP:
     LODL 0              # ac = *sp
@@ -32,6 +34,7 @@ END:
 
 output:
 ```
+Hello, World!
 Hello, World!
 ```
 

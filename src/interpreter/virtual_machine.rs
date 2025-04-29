@@ -56,34 +56,31 @@ impl VirtualMachine {
     }
 
     pub fn run(&mut self, interpreter_mode: InterpreterMode) {
-        let tokens = match interpreter_mode {
+        let tokens = tokenizer::tokenize(&self.file_path);
+        match interpreter_mode {
             InterpreterMode::Execute => {
-                tokenizer::tokenize(&self.file_path)
+                let _ = self.first_pass(&tokens, &interpreter_mode);
+                self.second_pass(&tokens);
+                self.resolve_branch_addresses();
+                self.execute();
             }
             InterpreterMode::Binary => {
-                let tokens = tokenizer::tokenize(&self.file_path);
-                tokenizer::get_removed_system_call_tokens(&tokens)
+                let _ = self.first_pass(&tokens, &interpreter_mode);
+                self.second_pass(&tokens);
+                self.resolve_branch_addresses();
+
+                let removed_system_call_tokens = tokenizer::get_removed_system_call_tokens(&tokens);
+
+                let is_data_memory_initialized = self.first_pass(&removed_system_call_tokens, &interpreter_mode);
+                self.second_pass(&removed_system_call_tokens);
+                self.resolve_branch_addresses();
+                self.generate_binary(is_data_memory_initialized);
+                
             }
-            
-        };
-
-        //self.print_tokens(&tokens);
-
-        let is_data_memory_initialized = self.first_pass(&tokens, &interpreter_mode);
-        self.second_pass(&tokens);
-        self.resolve_branch_addresses();
-
+        }
         //self.print_stack();
         //self.print_symbol_table();
         //self.print_memory();
-        match interpreter_mode {
-            InterpreterMode::Execute => {
-                self.execute();
-            },
-            InterpreterMode::Binary => {
-                self.generate_binary( is_data_memory_initialized );
-            }
-        }
     }
 
     fn print_stack(&self) {
@@ -119,6 +116,11 @@ impl VirtualMachine {
     }
 
     fn first_pass(&mut self, raw_tokens_vector: &Vec<Token>, interpreter_mode: &InterpreterMode) -> bool {
+        // Randomize the stack
+        for i in 0..self.stack.len() {
+            self.stack[i] = rand::random::<i16>();
+        }
+        self.sp = (STACK_SIZE - 1) as i16;
         // ==== PRIMEIRA PASSAGEM ====
         let mut section = Section::Text;
         let mut last_line_initialized = 0;
@@ -552,6 +554,7 @@ impl VirtualMachine {
     }
 
     fn second_pass(&mut self, raw_tokens: &Vec<Token>) {
+        self.memory.clear();
         let mut section = Section::Text;
         let mut token_counter = 0;
         'token_counter_loop: while token_counter < raw_tokens.len() {

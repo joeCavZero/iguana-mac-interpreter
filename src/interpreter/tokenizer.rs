@@ -138,60 +138,35 @@ pub fn tokenize(file_path: &String) -> Vec<Token> {
 
 pub fn get_removed_system_call_tokens(tokens: &Vec<Token>) -> Vec<Token> {
     let mut new_tokens_vector: Vec<Token> = Vec::new();
-    let mut i = 0;
-    while i < tokens.len() {
-        match tokens.get(i) {
+    let mut tk_counter = 0;
+    while tk_counter < tokens.len() {
+        match tokens.get(tk_counter) {
             Some(token) => {
-                match Opcode::from_str( token.get_token().as_str() ) {
+                match Opcode::from_str(token.get_token().as_str()) {
                     Some(op) => {
-                        if Opcode::is_argumented(op) {
-                            match tokens.get(i + 1) {
-                                Some( next_token ) => {
-                                    if Opcode::from_str( next_token.get_token().as_str() ).is_some() {
-                                        logkit::exit_with_positional_error_message(
-                                            format!("Invalid argument for operation: {}", token.get_token()).as_str(),
-                                            next_token.line, next_token.col
-                                        );
-                                    } else {
-                                        match op {
-                                            Opcode::Printlninstruction | Opcode::Printinstruction | Opcode::Sleepd | Opcode::Sleepi | Opcode::Inputstring => {
-                                                i += 2;
-                                                continue;
-                                            }
-                                            _ => {
-                                                new_tokens_vector.push( token.clone() );
-                                                new_tokens_vector.push( next_token.clone() );
-                                                i += 2;
-                                                continue;
-                                            }
-                                        }
-                                    }
-                                        
-                                }
-                                None => {
-                                    logkit::exit_with_positional_error_message( "Argument for operation not found.", token.line, token.col );
-                                }
+                        match op {
+                            Opcode::Printlnac | Opcode::Printac | 
+                            Opcode::Printlnacchar | Opcode::Printacchar | 
+                            Opcode::Printsp | Opcode::Printlnsp |
+                            Opcode::Inputac | Opcode::Inputacchar => {
+                                tk_counter += 1;
+                                continue;
                             }
-                        } else { // Casko não seja uma operação com argumento
-                            match op {
-                                Opcode::Printlnac | Opcode::Printac | 
-                                Opcode::Printlnacchar | Opcode::Printacchar | 
-                                Opcode::Printsp | Opcode::Printlnsp |
-                                Opcode::Inputac | Opcode::Inputacchar => {
-                                    i += 1;
-                                    continue;
-                                }
-                                _ => {
-                                    new_tokens_vector.push( token.clone() );
-                                    i += 1;
-                                    continue;
-                                }        
+                            Opcode::Printlninstruction | Opcode::Printinstruction | 
+                            Opcode::Sleepd | Opcode::Sleepi | Opcode::Inputstring => {
+                                tk_counter += 2;
+                                continue;
+                            }
+                            _ => {
+                                new_tokens_vector.push(token.clone());
+                                tk_counter += 1;
+                                continue;
                             }
                         }
                     }
                     None => {
-                        new_tokens_vector.push( token.clone() );
-                        i += 1;
+                        new_tokens_vector.push(token.clone());
+                        tk_counter += 1;
                         continue;
                     }
                 }
@@ -202,11 +177,7 @@ pub fn get_removed_system_call_tokens(tokens: &Vec<Token>) -> Vec<Token> {
         }
     }
 
-
-    /*
-        aqui vamos remover as labels remanescentes no final do vetor
-        isso não previne alguns casos, mas é melhor que nada
-    */
+    
     for i in (0..new_tokens_vector.len()).rev() {
         let token = &new_tokens_vector[i];
         if token.is_label() {
@@ -216,5 +187,5 @@ pub fn get_removed_system_call_tokens(tokens: &Vec<Token>) -> Vec<Token> {
         }
     }
 
-    new_tokens_vector
+    new_tokens_vector 
 }

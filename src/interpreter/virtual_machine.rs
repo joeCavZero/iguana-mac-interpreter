@@ -1517,6 +1517,8 @@ impl VirtualMachine {
                 }
             }
         }
+        println!();
+        io::stdout().flush().unwrap();
     }
 
 

@@ -372,3 +372,7 @@ iguana info
 - **SLEEPI X**  
   **Behavior**: Pauses execution for `X` milliseconds.  
   **Pseudo-behavior**: `sleep_in_milliseconds( X )`
+
+## Links
+
+[![Hypercommit](https://img.shields.io/badge/Hypercommit-DB2475)](https://hypercommit.com/iguana-mac-interpreter)
